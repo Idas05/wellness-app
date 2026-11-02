@@ -1,13 +1,14 @@
 {
   "expo": {
-    "name": "wellness-app",
+    "name": "Wellness",
     "slug": "wellness-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.idas05.wellness"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +20,14 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "bundler": "metro"
+    },
+    "scheme": "wellness",
+    "plugins": [
+      "expo-router",
+      "expo-notifications"
+    ]
   }
 }
