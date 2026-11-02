@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { supabase } from '../lib/supabase';
 
 type Props = { visible: boolean; onClose: () => void };
@@ -30,7 +30,10 @@ export function AuthSheet({ visible, onClose }: Props) {
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.backdrop}>
+      <KeyboardAvoidingView
+        style={styles.backdrop}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <View style={styles.sheet}>
           <Text style={styles.heading}>{mode === 'signIn' ? 'Sign in' : 'Create account'}</Text>
           <Text style={styles.sub}>Sign in on your phone and the website to keep reminders in sync.</Text>
@@ -80,7 +83,7 @@ export function AuthSheet({ visible, onClose }: Props) {
             <Text style={styles.secondaryText}>Not now</Text>
           </Pressable>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

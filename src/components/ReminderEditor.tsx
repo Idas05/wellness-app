@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CATEGORIES, type CategoryId } from '../lib/categories';
 import { ALL_DAYS, DAY_LABELS, formatTime, newId, type Reminder } from '../lib/reminders';
 
@@ -45,7 +45,10 @@ export function ReminderEditor({ visible, initial, defaultCategory, onSave, onDe
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.backdrop}>
+      <KeyboardAvoidingView
+        style={styles.backdrop}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <View style={styles.sheet}>
           <ScrollView contentContainerStyle={{ padding: 20 }}>
             <Text style={styles.heading}>{initial ? 'Edit reminder' : 'New reminder'}</Text>
@@ -111,7 +114,7 @@ export function ReminderEditor({ visible, initial, defaultCategory, onSave, onDe
             </Pressable>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
