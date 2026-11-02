@@ -156,7 +156,7 @@ export default function RemindersScreen() {
         {groups.length === 0 && (
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>No reminders yet</Text>
-            <Text style={styles.emptyText}>Tap “+ Add reminder” to set one for skin care, meals, gym and more.</Text>
+            <Text style={styles.emptyText}>Tap “+ Add reminder” to set one for waking up, hygiene, meals, gym and more.</Text>
           </View>
         )}
 
@@ -204,7 +204,7 @@ export default function RemindersScreen() {
       <ReminderEditor
         visible={editorOpen}
         initial={editing}
-        defaultCategory={filter === 'all' ? 'skincare' : filter}
+        defaultCategory={filter === 'all' ? 'wakeup' : filter}
         onSave={upsert}
         onDelete={remove}
         onClose={() => setEditorOpen(false)}

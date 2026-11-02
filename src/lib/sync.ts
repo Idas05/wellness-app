@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { normalizeCategory } from './categories';
 import type { Reminder } from './reminders';
 
 type Row = {
@@ -27,7 +28,7 @@ export async function fetchRemote(): Promise<Reminder[] | null> {
     .from('reminders')
     .select('id, category, title, hour, minute, days, enabled');
   if (error) throw error;
-  return (data as Row[]).map((row) => ({ ...row }));
+  return (data as Row[]).map((row) => ({ ...row, category: normalizeCategory(row.category) }));
 }
 
 export async function pushRemote(r: Reminder): Promise<void> {

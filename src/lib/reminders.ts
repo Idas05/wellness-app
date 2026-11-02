@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { CategoryId } from './categories';
+import { normalizeCategory, type CategoryId } from './categories';
 
 export type Reminder = {
   id: string;
@@ -20,7 +20,7 @@ const KEY = 'wellness.reminders.v1';
 export async function loadReminders(): Promise<Reminder[]> {
   try {
     const raw = await AsyncStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as Reminder[]) : [];
+    return raw ? (JSON.parse(raw) as Reminder[]).map((r) => ({ ...r, category: normalizeCategory(r.category) })) : [];
   } catch {
     return [];
   }

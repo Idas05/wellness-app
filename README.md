@@ -3,7 +3,7 @@
 One codebase for the iPhone app and the website, built with Expo.
 
 ## Reminders
-Create reminders in sections: skin care, bedtime, breakfast, lunch, dinner, gym and brushing teeth.
+Create reminders in sections: wake up, personal hygiene, breakfast, lunch, dinner, gym and bedtime.
 Pick a time and which days it repeats.
 
 - **iPhone:** notifications are scheduled on the phone itself, so they arrive even when the app is closed. Free.
