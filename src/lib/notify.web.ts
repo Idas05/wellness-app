@@ -22,22 +22,31 @@ export async function rescheduleAll(reminders: Reminder[]): Promise<Reminder[]> 
 }
 
 const fired = new Set<string>();
+let lastChecked = Date.now() - 60_000;
 
+// Browsers slow down timers in background tabs, so instead of matching the exact
+// minute we fire every reminder that came due since the previous check.
 function check(reminders: Reminder[]) {
-  if (!supported() || Notification.permission !== 'granted') return;
   const now = new Date();
+  // Look back at least 3 minutes (covers reminders that just synced from the phone),
+  // or further if the browser paused this tab, up to 10 minutes.
+  const lookBack = Math.min(Math.max(3 * 60_000, now.getTime() - lastChecked), 10 * 60_000);
+  const since = now.getTime() - lookBack;
+  lastChecked = now.getTime();
+  if (!supported() || Notification.permission !== 'granted') return;
   const weekday = now.getDay() + 1; // 1 = Sunday
-  const minuteKey = `${now.toDateString()} ${now.getHours()}:${now.getMinutes()}`;
   for (const r of reminders) {
     if (!r.enabled || !r.days.includes(weekday)) continue;
-    if (r.hour !== now.getHours() || r.minute !== now.getMinutes()) continue;
-    const key = `${r.id}@${minuteKey}`;
+    const due = new Date(now.getFullYear(), now.getMonth(), now.getDate(), r.hour, r.minute).getTime();
+    if (due <= since || due > now.getTime()) continue;
+    const key = `${r.id}@${due}`;
     if (fired.has(key)) continue;
     fired.add(key);
     const cat = getCategory(r.category);
     new Notification(`${cat.emoji} ${cat.label}`, {
       body: r.title || `Time for ${cat.label.toLowerCase()}`,
       tag: key,
+      requireInteraction: true,
     });
   }
 }

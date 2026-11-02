@@ -72,10 +72,14 @@ export default function RemindersScreen() {
       if (state === 'active' && signedIn) refresh();
     });
 
+    // The website stays open in a tab, so pull changes made on the phone every minute.
+    const poll = Platform.OS === 'web' ? setInterval(() => signedIn && refresh(), 60_000) : undefined;
+
     return () => {
       stopWeb();
       sub?.data.subscription.unsubscribe();
       appState.remove();
+      if (poll) clearInterval(poll);
     };
   }, [persist, applySynced, refresh]);
 
