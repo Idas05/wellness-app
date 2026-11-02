@@ -59,6 +59,17 @@ export async function scheduleReminder(reminder: Reminder): Promise<string[]> {
   return ids;
 }
 
+/** Clears every scheduled notification and schedules the given reminders again. */
+export async function rescheduleAll(reminders: Reminder[]): Promise<Reminder[]> {
+  await Notifications.cancelAllScheduledNotificationsAsync();
+  const out: Reminder[] = [];
+  for (const r of reminders) {
+    const notificationIds = await scheduleReminder({ ...r, notificationIds: [] }).catch(() => []);
+    out.push({ ...r, notificationIds });
+  }
+  return out;
+}
+
 /** Website-only reminder checking; phones don't need it. */
 export function startWebChecker(_getReminders: () => Reminder[]): () => void {
   return () => {};

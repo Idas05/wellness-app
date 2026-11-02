@@ -17,6 +17,10 @@ export async function scheduleReminder(_reminder: Reminder): Promise<string[]> {
   return [];
 }
 
+export async function rescheduleAll(reminders: Reminder[]): Promise<Reminder[]> {
+  return reminders;
+}
+
 const fired = new Set<string>();
 
 function check(reminders: Reminder[]) {
