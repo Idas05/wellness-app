@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { AppState, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { AuthSheet } from '../components/AuthSheet';
 import { ReminderEditor } from '../components/ReminderEditor';
 import { CATEGORIES, getCategory, type CategoryId } from '../lib/categories';
-import { cancelReminder, requestPermission, scheduleReminder, startWebChecker } from '../lib/notify';
+import { cancelReminder, requestPermission, rescheduleAll, scheduleReminder, startWebChecker } from '../lib/notify';
 import { formatDays, formatTime, loadReminders, saveReminders, type Reminder } from '../lib/reminders';
+import { supabase } from '../lib/supabase';
+import { deleteRemote, fetchRemote, mergeAfterSignIn, pushRemote } from '../lib/sync';
 
 type Filter = CategoryId | 'all';
 
@@ -13,19 +16,71 @@ export default function RemindersScreen() {
   const [editing, setEditing] = useState<Reminder | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [permission, setPermission] = useState<boolean | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const latest = useRef<Reminder[]>([]);
   latest.current = reminders;
 
-  useEffect(() => {
-    loadReminders().then(setReminders);
-    requestPermission().then(setPermission).catch(() => setPermission(false));
-    return startWebChecker(() => latest.current);
-  }, []);
-
   const persist = useCallback(async (next: Reminder[]) => {
     setReminders(next);
+    latest.current = next;
     await saveReminders(next);
   }, []);
+
+  // Replace the list on this device with the synced one and reschedule phone notifications.
+  const applySynced = useCallback(
+    async (list: Reminder[]) => {
+      await persist(await rescheduleAll(list));
+      setSyncError(null);
+    },
+    [persist],
+  );
+
+  const refresh = useCallback(async () => {
+    try {
+      const remote = await fetchRemote();
+      if (remote) await applySynced(remote);
+    } catch (e) {
+      setSyncError(e instanceof Error ? e.message : String(e));
+    }
+  }, [applySynced]);
+
+  useEffect(() => {
+    let signedIn = false;
+    const ready = loadReminders().then(persist);
+    requestPermission().then(setPermission).catch(() => setPermission(false));
+    const stopWeb = startWebChecker(() => latest.current);
+
+    const sub = supabase?.auth.onAuthStateChange((event, session) => {
+      setUserEmail(session?.user.email ?? null);
+      signedIn = !!session;
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        if (!session) return;
+        // Run outside the auth callback, after local reminders have loaded.
+        setTimeout(() => {
+          ready
+            .then(() => mergeAfterSignIn(latest.current))
+            .then(applySynced)
+            .catch((e) => setSyncError(e instanceof Error ? e.message : String(e)));
+        }, 0);
+      }
+    });
+
+    // Pick up changes made on the other device when the app comes back to the front.
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && signedIn) refresh();
+    });
+
+    return () => {
+      stopWeb();
+      sub?.data.subscription.unsubscribe();
+      appState.remove();
+    };
+  }, [persist, applySynced, refresh]);
+
+  const syncSave = (r: Reminder) =>
+    userEmail ? pushRemote(r).catch((e) => setSyncError(e instanceof Error ? e.message : String(e))) : undefined;
 
   const upsert = async (r: Reminder) => {
     const notificationIds = await scheduleReminder(r).catch(() => []);
@@ -33,12 +88,14 @@ export default function RemindersScreen() {
     const exists = reminders.some((x) => x.id === r.id);
     await persist(exists ? reminders.map((x) => (x.id === r.id ? saved : x)) : [...reminders, saved]);
     setEditorOpen(false);
+    syncSave(saved);
   };
 
   const remove = async (r: Reminder) => {
     await cancelReminder(r).catch(() => {});
     await persist(reminders.filter((x) => x.id !== r.id));
     setEditorOpen(false);
+    if (userEmail) deleteRemote(r.id).catch((e) => setSyncError(e instanceof Error ? e.message : String(e)));
   };
 
   const toggle = (r: Reminder) => upsert({ ...r, enabled: !r.enabled });
@@ -62,6 +119,21 @@ export default function RemindersScreen() {
                 ? 'Allow notifications for this site in your browser to get reminders.'
                 : 'Turn them on in Settings › Notifications to get reminders.'}
             </Text>
+          </View>
+        )}
+        {supabase && (
+          <View style={styles.account}>
+            <Text style={styles.accountText} numberOfLines={1}>
+              {userEmail ? `☁️ Synced as ${userEmail}` : 'Reminders are only on this device.'}
+            </Text>
+            <Pressable onPress={() => (userEmail ? supabase?.auth.signOut() : setAuthOpen(true))}>
+              <Text style={styles.accountLink}>{userEmail ? 'Sign out' : 'Sign in to sync'}</Text>
+            </Pressable>
+          </View>
+        )}
+        {syncError && (
+          <View style={styles.banner}>
+            <Text style={styles.bannerText}>Couldn't sync: {syncError}</Text>
           </View>
         )}
         {Platform.OS === 'web' && permission && (
@@ -127,6 +199,8 @@ export default function RemindersScreen() {
         <Text style={styles.fabText}>+ Add reminder</Text>
       </Pressable>
 
+      <AuthSheet visible={authOpen} onClose={() => setAuthOpen(false)} />
+
       <ReminderEditor
         visible={editorOpen}
         initial={editing}
@@ -154,6 +228,18 @@ const styles = StyleSheet.create({
   container: { padding: 16, width: '100%', maxWidth: 640, alignSelf: 'center' },
   banner: { backgroundColor: '#FDECEA', borderRadius: 12, padding: 12, marginBottom: 12 },
   bannerText: { color: '#8A2B20', fontSize: 14 },
+  account: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  accountText: { flex: 1, color: '#2B2724', fontSize: 14 },
+  accountLink: { color: '#2B6CB0', fontSize: 14, fontWeight: '700' },
   hint: { color: '#6B645C', fontSize: 13, marginBottom: 8 },
   filters: { gap: 8, paddingVertical: 4 },
   chip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: '#DDD6CC', backgroundColor: '#fff' },
