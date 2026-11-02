@@ -69,7 +69,7 @@ export function ReminderEditor({ visible, initial, defaultCategory, onSave, onDe
             <TextInput
               value={title}
               onChangeText={setTitle}
-              placeholder="e.g. Moisturizer + sunscreen"
+              placeholder="e.g. Brush teeth + skincare"
               placeholderTextColor="#9A948C"
               style={styles.input}
             />
