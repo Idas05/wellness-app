@@ -22,3 +22,7 @@ npm install
 npx expo start        # scan the QR code with the Camera app, opens in Expo Go on iPhone
 npx expo start --web  # opens the website in your browser
 ```
+
+## Online
+- Website: https://idas05.github.io/wellness-app (published on every merge to main)
+- App: published to Expo Go on every merge to main, so it opens without your Mac
