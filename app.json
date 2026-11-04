@@ -28,6 +28,12 @@
     "plugins": [
       "expo-router",
       "expo-notifications"
-    ]
+    ],
+    "owner": "ishandas420",
+    "extra": {
+      "eas": {
+        "projectId": "45d3e503-4f37-4edd-8b55-7aa9f79f5b13"
+      }
+    }
   }
 }
