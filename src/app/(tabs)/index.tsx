@@ -1,95 +1,200 @@
-import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { card, colors, Screen } from '../../components/Screen';
-import { getCategory } from '../../lib/categories';
-import { formatTime } from '../../lib/reminders';
-import { formatMinutes, scoreColor, scoreLabel, sleepScore } from '../../lib/sleep';
+import { useState } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ReminderEditor } from '../../components/ReminderEditor';
+import { CATEGORIES, type CategoryId } from '../../lib/categories';
+import { formatDays, formatTime, type Reminder } from '../../lib/reminders';
+import { Screen } from '../../components/Screen';
 import { useApp } from '../../lib/store';
+import { supabase } from '../../lib/supabase';
 
-function greeting(h: number) {
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
-}
+type Filter = CategoryId | 'all';
 
-export default function TodayScreen() {
-  const router = useRouter();
-  const { reminders, sleep, userEmail } = useApp();
-  const now = new Date();
-  const weekday = now.getDay() + 1; // 1 = Sunday
-  const nowMin = now.getHours() * 60 + now.getMinutes();
+export default function RemindersScreen() {
+  const { reminders, permission, syncError, upsertReminder, removeReminder, userEmail, setAuthOpen } = useApp();
+  const [filter, setFilter] = useState<Filter>('all');
+  const [editing, setEditing] = useState<Reminder | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
 
-  const today = reminders
-    .filter((r) => r.enabled && r.days.includes(weekday))
+  const upsert = async (r: Reminder) => {
+    setEditorOpen(false);
+    await upsertReminder(r);
+  };
+
+  const remove = async (r: Reminder) => {
+    setEditorOpen(false);
+    await removeReminder(r);
+  };
+
+  const toggle = (r: Reminder) => upsert({ ...r, enabled: !r.enabled });
+
+  const visible = reminders
+    .filter((r) => filter === 'all' || r.category === filter)
     .sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute));
-  const next = today.find((r) => r.hour * 60 + r.minute >= nowMin);
 
-  const last = sleep[0];
-  const score = last ? sleepScore(last, sleep) : null;
+  const groups = CATEGORIES.map((c) => ({ cat: c, items: visible.filter((r) => r.category === c.id) })).filter(
+    (g) => g.items.length > 0,
+  );
 
   return (
     <Screen
-      title={greeting(now.getHours())}
-      subtitle={now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
-    >
-      <Pressable style={card.box} onPress={() => router.navigate(last ? '/progress' : '/more')}>
-        <Text style={card.heading}>🌙 Last night's sleep</Text>
-        {last && score ? (
-          <View style={styles.row}>
-            <View style={[styles.badge, { backgroundColor: scoreColor(score.total) }]}>
-              <Text style={styles.badgeText}>{score.total}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.big}>{scoreLabel(score.total)}</Text>
-              <Text style={styles.muted}>
-                {formatMinutes(last.asleep_min)} asleep · {formatMinutes(last.deep_min)} deep
-              </Text>
-            </View>
-          </View>
-        ) : (
-          <Text style={styles.muted}>
-            {userEmail
-              ? 'No sleep data yet. Tap to connect your Apple Watch.'
-              : 'Sign in from the More tab to see your Apple Watch sleep score.'}
-          </Text>
-        )}
-      </Pressable>
-
-      <View style={card.box}>
-        <Text style={card.heading}>Today's reminders</Text>
-        {today.length === 0 && (
-          <Pressable onPress={() => router.navigate('/plan')}>
-            <Text style={styles.muted}>Nothing set for today. Tap to add reminders in Plan.</Text>
+      title="Reminders"
+      subtitle="Your daily routine"
+      overlay={
+        <>
+          <Pressable
+            style={styles.fab}
+            onPress={() => {
+              setEditing(null);
+              setEditorOpen(true);
+            }}
+          >
+            <Text style={styles.fabText}>+ Add reminder</Text>
           </Pressable>
+          <ReminderEditor
+            visible={editorOpen}
+            initial={editing}
+            defaultCategory={filter === 'all' ? 'wakeup' : filter}
+            onSave={upsert}
+            onDelete={remove}
+            onClose={() => setEditorOpen(false)}
+          />
+        </>
+      }
+    >
+        <View style={styles.account}>
+          <Text style={styles.accountText} numberOfLines={1}>
+            {userEmail ? `Signed in as ${userEmail}` : 'Sign in to sync your phone and the website'}
+          </Text>
+          <Pressable onPress={() => (userEmail ? supabase?.auth.signOut() : setAuthOpen(true))}>
+            <Text style={styles.accountLink}>{userEmail ? 'Sign out' : 'Sign in'}</Text>
+          </Pressable>
+        </View>
+        {permission === false && (
+          <View style={styles.banner}>
+            <Text style={styles.bannerText}>
+              Notifications are off.{' '}
+              {Platform.OS === 'web'
+                ? 'Allow notifications for this site in your browser to get reminders.'
+                : 'Turn them on in Settings › Notifications to get reminders.'}
+            </Text>
+          </View>
         )}
-        {today.map((r) => {
-          const cat = getCategory(r.category);
-          const done = r.hour * 60 + r.minute < nowMin;
-          const isNext = r.id === next?.id;
-          return (
-            <View key={r.id} style={[styles.item, isNext && { backgroundColor: cat.color + '33' }, done && { opacity: 0.45 }]}>
-              <Text style={styles.emoji}>{cat.emoji}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.itemTitle}>{r.title || cat.label}</Text>
-                <Text style={styles.muted}>{isNext ? 'Up next' : done ? 'Done' : cat.label}</Text>
-              </View>
-              <Text style={styles.time}>{formatTime(r.hour, r.minute)}</Text>
-            </View>
-          );
-        })}
-      </View>
+        {syncError && (
+          <View style={styles.banner}>
+            <Text style={styles.bannerText}>Couldn't sync: {syncError}</Text>
+          </View>
+        )}
+        {Platform.OS === 'web' && permission && (
+          <Text style={styles.hint}>Keep this tab open to get desktop notifications.</Text>
+        )}
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+          <FilterChip label="All" active={filter === 'all'} onPress={() => setFilter('all')} />
+          {CATEGORIES.map((c) => (
+            <FilterChip
+              key={c.id}
+              label={`${c.emoji} ${c.label}`}
+              color={c.color}
+              active={filter === c.id}
+              onPress={() => setFilter(c.id)}
+            />
+          ))}
+        </ScrollView>
+
+        {groups.length === 0 && (
+          <View style={styles.empty}>
+            <Text style={styles.emptyTitle}>No reminders yet</Text>
+            <Text style={styles.emptyText}>Tap “+ Add reminder” to set one for waking up, hygiene, meals, gym and more.</Text>
+          </View>
+        )}
+
+        {groups.map(({ cat, items }) => (
+          <View key={cat.id} style={{ marginTop: 18 }}>
+            <Text style={styles.groupTitle}>
+              {cat.emoji} {cat.label}
+            </Text>
+            {items.map((r) => (
+              <Pressable
+                key={r.id}
+                onPress={() => {
+                  setEditing(r);
+                  setEditorOpen(true);
+                }}
+                style={[styles.card, { borderLeftColor: cat.color }, !r.enabled && { opacity: 0.5 }]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardTime}>{formatTime(r.hour, r.minute)}</Text>
+                  <Text style={styles.cardSub}>
+                    {r.title ? `${r.title} · ` : ''}
+                    {formatDays(r.days)}
+                  </Text>
+                </View>
+                <Switch value={r.enabled} onValueChange={() => toggle(r)} />
+              </Pressable>
+            ))}
+          </View>
+        ))}
+        <View style={{ height: 50 }} />
     </Screen>
   );
 }
 
+function FilterChip({ label, active, color, onPress }: { label: string; active: boolean; color?: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[styles.chip, active && { backgroundColor: color ?? '#2B2724', borderColor: color ?? '#2B2724' }]}
+    >
+      <Text style={[styles.chipText, active && !color && { color: '#fff' }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  badge: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
-  badgeText: { fontSize: 24, fontWeight: '800', color: colors.ink },
-  big: { fontSize: 20, fontWeight: '700', color: colors.ink },
-  muted: { fontSize: 14, color: colors.muted, marginTop: 2 },
-  item: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 12, marginHorizontal: -6 },
-  emoji: { fontSize: 22 },
-  itemTitle: { fontSize: 16, fontWeight: '600', color: colors.ink },
-  time: { fontSize: 15, fontWeight: '700', color: colors.ink },
+  account: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  accountText: { flex: 1, color: '#2B2724', fontSize: 14 },
+  accountLink: { color: '#2B6CB0', fontSize: 14, fontWeight: '700' },
+  banner: { backgroundColor: '#FDECEA', borderRadius: 12, padding: 12, marginBottom: 12 },
+  bannerText: { color: '#8A2B20', fontSize: 14 },
+  hint: { color: '#6B645C', fontSize: 13, marginBottom: 8 },
+  filters: { gap: 8, paddingVertical: 4 },
+  chip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: '#DDD6CC', backgroundColor: '#fff' },
+  chipText: { fontSize: 14, color: '#2B2724' },
+  empty: { alignItems: 'center', marginTop: 60, paddingHorizontal: 24 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#2B2724' },
+  emptyText: { fontSize: 15, color: '#6B645C', textAlign: 'center', marginTop: 6 },
+  groupTitle: { fontSize: 15, fontWeight: '700', color: '#6B645C', marginBottom: 8 },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 8,
+    borderLeftWidth: 5,
+  },
+  cardTime: { fontSize: 22, fontWeight: '700', color: '#2B2724' },
+  cardSub: { fontSize: 14, color: '#6B645C', marginTop: 2 },
+  fab: {
+    position: 'absolute',
+    bottom: 112,
+    alignSelf: 'center',
+    backgroundColor: '#2B2724',
+    paddingVertical: 16,
+    paddingHorizontal: 28,
+    borderRadius: 999,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  fabText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

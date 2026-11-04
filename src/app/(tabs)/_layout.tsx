@@ -6,10 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 type IconName = keyof typeof Ionicons.glyphMap;
 
 const TABS: Record<string, { label: string; icon: IconName; iconActive: IconName }> = {
-  index: { label: 'Today', icon: 'home-outline', iconActive: 'home' },
-  plan: { label: 'Plan', icon: 'calendar-outline', iconActive: 'calendar' },
-  progress: { label: 'Progress', icon: 'bar-chart-outline', iconActive: 'bar-chart' },
-  more: { label: 'More', icon: 'ellipsis-horizontal', iconActive: 'ellipsis-horizontal' },
+  index: { label: 'Reminders', icon: 'notifications-outline', iconActive: 'notifications' },
+  sleep: { label: 'Sleep', icon: 'moon-outline', iconActive: 'moon' },
 };
 
 function PillTabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
@@ -50,10 +48,8 @@ export default function TabsLayout() {
       tabBar={(props) => <PillTabBar {...props} />}
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: '#FAF7F2' } }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Today' }} />
-      <Tabs.Screen name="plan" options={{ title: 'Plan' }} />
-      <Tabs.Screen name="progress" options={{ title: 'Progress' }} />
-      <Tabs.Screen name="more" options={{ title: 'More' }} />
+      <Tabs.Screen name="index" options={{ title: 'Reminders' }} />
+      <Tabs.Screen name="sleep" options={{ title: 'Sleep' }} />
     </Tabs>
   );
 }
@@ -66,7 +62,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     padding: 6,
     width: '100%',
-    maxWidth: 420,
+    maxWidth: 280,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 16,

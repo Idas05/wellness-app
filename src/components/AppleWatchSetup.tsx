@@ -1,17 +1,20 @@
 import * as Clipboard from 'expo-clipboard';
 import { useEffect, useState } from 'react';
-import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { card, colors, Screen } from '../../components/Screen';
-import { getOrCreateToken } from '../../lib/sleep';
-import { useApp } from '../../lib/store';
-import { supabase } from '../../lib/supabase';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { card, colors } from './Screen';
+import { getOrCreateToken } from '../lib/sleep';
+import { useApp } from '../lib/store';
+import { supabase } from '../lib/supabase';
 
 const ENDPOINT = `${process.env.EXPO_PUBLIC_SUPABASE_URL ?? ''}/rest/v1/rpc/ingest_sleep`;
 const KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 const GUIDE = 'https://github.com/Idas05/wellness-app/blob/main/docs/apple-watch-sleep.md';
 
-export default function MoreScreen() {
-  const { userEmail, setAuthOpen, permission, refreshSleep, sleep } = useApp();
+/** The Apple Watch card: shows the values the iPhone Shortcut needs. Starts folded once sleep data arrives. */
+export function AppleWatchSetup() {
+  const { userEmail, setAuthOpen, refreshSleep, sleep } = useApp();
+  const [open, setOpen] = useState(false);
+  const folded = sleep.length > 0 && !open;
   const [token, setToken] = useState<string | null>(null);
   const [tokenError, setTokenError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -38,41 +41,25 @@ export default function MoreScreen() {
   };
 
   return (
-    <Screen title="More" subtitle="Account, devices and settings">
-      <View style={card.box}>
-        <Text style={card.heading}>Account</Text>
-        <Text style={styles.body}>
-          {userEmail ? `Signed in as ${userEmail}` : 'Not signed in. Reminders stay on this device only.'}
-        </Text>
-        <Pressable
-          style={[styles.button, userEmail && styles.buttonLight]}
-          onPress={() => (userEmail ? supabase?.auth.signOut() : setAuthOpen(true))}
-        >
-          <Text style={[styles.buttonText, userEmail && { color: colors.ink }]}>
-            {userEmail ? 'Sign out' : 'Sign in to sync'}
-          </Text>
-        </Pressable>
-      </View>
-
-      <View style={card.box}>
-        <Text style={card.heading}>Notifications</Text>
-        <Text style={styles.body}>
-          {permission
-            ? Platform.OS === 'web'
-              ? 'On. Keep this tab open to get desktop notifications.'
-              : 'On. Reminders will pop up on this phone.'
-            : Platform.OS === 'web'
-              ? 'Off. Allow notifications for this site in your browser settings.'
-              : 'Off. Turn them on in Settings › Notifications › Expo Go.'}
-        </Text>
-      </View>
-
+    <>
       <View style={card.box}>
         <Text style={card.heading}>⌚ Apple Watch sleep</Text>
         {!userEmail ? (
-          <Text style={styles.body}>Sign in first, then come back here to connect your Apple Watch.</Text>
+          <>
+            <Text style={styles.body}>Sign in first, then come back here to connect your Apple Watch.</Text>
+            <Pressable style={styles.button} onPress={() => setAuthOpen(true)}>
+              <Text style={styles.buttonText}>Sign in</Text>
+            </Pressable>
+          </>
         ) : tokenError ? (
           <Text style={[styles.body, { color: '#8A2B20' }]}>{tokenError}</Text>
+        ) : folded ? (
+          <>
+            <Text style={styles.body}>Connected. {sleep.length} night(s) received.</Text>
+            <Pressable onPress={() => setOpen(true)}>
+              <Text style={[styles.small, styles.link]}>Show setup details ›</Text>
+            </Pressable>
+          </>
         ) : (
           <>
             <Text style={styles.body}>
@@ -95,7 +82,7 @@ export default function MoreScreen() {
           </>
         )}
       </View>
-    </Screen>
+    </>
   );
 }
 

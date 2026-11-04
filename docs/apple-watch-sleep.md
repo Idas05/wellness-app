@@ -12,7 +12,7 @@ sleep and sends it to the Wellness app every morning. You build it once (about 1
 
 ## 2. Get your three values
 
-In the Wellness app, open the **More** tab and find **Apple Watch sleep**. You'll see three rows:
+In the Wellness app, open the **Sleep** tab and find **Apple Watch sleep** (sign in first if asked). You'll see three rows:
 **Your code**, **Web address** and **Key**. Tapping a row copies it. Keep **Your code** private, like a password.
 
 > Tip: do the next part on your iPhone so you can copy and paste straight from the app.
@@ -51,7 +51,7 @@ In the Wellness app, open the **More** tab and find **Apple Watch sleep**. You'l
 
 Tap the Shortcut once. The first time, iPhone asks to read your **Sleep** data from Health and to
 connect to **supabase.co**. Tap **Allow** for both. You should see **"Saved last night's sleep."**
-Then open the **Progress** tab in the app (pull down to refresh) to see your score.
+Then open the **Sleep** tab in the app (pull down to refresh) to see your score.
 
 ## 4. Run it every morning automatically
 
@@ -66,9 +66,9 @@ Running it more than once a day is fine: it just updates that night.
 
 | Message | What to do |
 | --- | --- |
-| *Unknown code* | Copy **Your code** again from the More tab and paste it into `p_token`. |
+| *Unknown code* | Copy **Your code** again from the Sleep tab and paste it into `p_token`. |
 | *No sleep found in the last day* | Wear your watch to bed with sleep tracking on (Health › Sleep). Check the Start Date filter says 18 hours. |
-| Nothing new in the app | Pull down on the Progress tab, or tap **Check for new sleep data** in More. |
+| Nothing new in the app | Pull down on the Sleep tab, or tap **Check for new sleep data** there. |
 | The automation didn't run | iPhone can block Health data while it's locked. Pick a time you're usually using your phone, or tap the Shortcut by hand. |
 
 ## How the score works (out of 100)

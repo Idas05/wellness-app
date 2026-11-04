@@ -2,8 +2,7 @@
 
 One codebase for the iPhone app and the website, built with Expo.
 
-The app has four tabs at the bottom: **Today** (what's next and last night's sleep), **Plan** (your reminders),
-**Progress** (sleep score) and **More** (account and Apple Watch setup).
+The app has two tabs at the bottom: **Reminders** and **Sleep** (sleep score and Apple Watch setup).
 
 ## Reminders
 Create reminders in sections: wake up, personal hygiene, breakfast, lunch, dinner, gym and bedtime.

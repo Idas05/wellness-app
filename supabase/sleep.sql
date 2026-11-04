@@ -58,7 +58,7 @@ declare
 begin
   select user_id into v_user from sleep_tokens where token::text = trim(p_token);
   if v_user is null then
-    raise exception 'Unknown code. Copy it again from the More tab in the Wellness app.';
+    raise exception 'Unknown code. Copy it again from the Sleep tab in the Wellness app.';
   end if;
 
   foreach v_line in array regexp_split_to_array(coalesce(p_samples, ''), E'[\\r\\n]+') loop

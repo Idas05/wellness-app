@@ -1,6 +1,7 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppleWatchSetup } from '../../components/AppleWatchSetup';
 import { card, colors, Screen } from '../../components/Screen';
 import { formatClock, formatMinutes, scoreColor, scoreLabel, sleepScore, type SleepNight } from '../../lib/sleep';
 import { useApp } from '../../lib/store';
@@ -18,8 +19,7 @@ function nightLabel(n: SleepNight) {
   return new Date(y, m - 1, d).toLocaleDateString([], { weekday: 'short' });
 }
 
-export default function ProgressScreen() {
-  const router = useRouter();
+export default function SleepScreen() {
   const { sleep, sleepError, refreshSleep, userEmail } = useApp();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -41,7 +41,7 @@ export default function ProgressScreen() {
   const stageTotal = last ? STAGES.reduce((s, st) => s + last[st.key], 0) : 0;
 
   return (
-    <Screen title="Progress" subtitle="Sleep score from your Apple Watch" refreshing={refreshing} onRefresh={onRefresh}>
+    <Screen title="Sleep" subtitle="Your sleep score from Apple Watch" refreshing={refreshing} onRefresh={onRefresh}>
       {sleepError && (
         <View style={styles.banner}>
           <Text style={styles.bannerText}>Couldn't load sleep: {sleepError}</Text>
@@ -53,12 +53,9 @@ export default function ProgressScreen() {
           <Text style={styles.emptyTitle}>No sleep data yet</Text>
           <Text style={styles.muted}>
             {userEmail
-              ? 'Set up the free iPhone Shortcut once, and your Apple Watch sleep shows up here every morning.'
-              : 'Sign in first, then set up the free iPhone Shortcut to bring in your Apple Watch sleep.'}
+              ? 'Set up the free iPhone Shortcut below once, and your Apple Watch sleep shows up here every morning.'
+              : 'Sign in, then set up the free iPhone Shortcut below to bring in your Apple Watch sleep.'}
           </Text>
-          <Pressable style={styles.button} onPress={() => router.navigate('/more')}>
-            <Text style={styles.buttonText}>{userEmail ? 'Connect Apple Watch' : 'Go to More'}</Text>
-          </Pressable>
         </View>
       ) : (
         <>
@@ -122,6 +119,7 @@ export default function ProgressScreen() {
           </View>
         </>
       )}
+      <AppleWatchSetup />
     </Screen>
   );
 }
