@@ -8,6 +8,7 @@ type IconName = keyof typeof Ionicons.glyphMap;
 const TABS: Record<string, { label: string; icon: IconName; iconActive: IconName }> = {
   index: { label: 'Reminders', icon: 'notifications-outline', iconActive: 'notifications' },
   sleep: { label: 'Sleep', icon: 'moon-outline', iconActive: 'moon' },
+  calories: { label: 'Cal Counter', icon: 'restaurant-outline', iconActive: 'restaurant' },
 };
 
 function PillTabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
@@ -50,6 +51,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" options={{ title: 'Reminders' }} />
       <Tabs.Screen name="sleep" options={{ title: 'Sleep' }} />
+      <Tabs.Screen name="calories" options={{ title: 'Cal Counter' }} />
     </Tabs>
   );
 }
@@ -62,7 +64,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     padding: 6,
     width: '100%',
-    maxWidth: 280,
+    maxWidth: 380,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 16,
