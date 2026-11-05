@@ -39,3 +39,13 @@ Docs: https://docs.expo.dev/eas/index.md
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+
+## This project (Wellness app)
+
+- Owner: Ishan (GitHub `Idas05`), who is new to coding. Give short step-by-step instructions with direct links. Everything must stay on free plans.
+- Features so far: reminders by section (Wake up, Personal hygiene, Breakfast, Lunch, Dinner, Gym, Bedtime), synced between the iPhone app and the website. To add a section, edit `src/lib/categories.ts`.
+- **Website**: https://idas05.github.io/wellness-app/. The `.github/workflows/website.yml` workflow publishes it to GitHub Pages on every push to `main`, built with `EXPO_BASE_URL=/wellness-app` (see `app.config.js`).
+- **iPhone app**: opened in Expo Go. Expo account `ishandas420`, project `@ishandas420/wellness-app` (ID in `app.json`). The `.github/workflows/app-update.yml` workflow runs `eas update --branch main --platform ios` on every push to `main`, using the `EXPO_TOKEN` repo secret. The runtime policy is `sdkVersion`, so Expo Go can load it.
+- **Sync**: Supabase (URL and public key in `.env`). The table and row-level security are in `supabase/schema.sql`, and "Confirm email" is off. Sign-in is email + password.
+- Website notifications only fire while the tab is open (`src/lib/notify.web.ts`). iPhone notifications are scheduled on the device (`src/lib/notify.ts`).
+- Workflow: branch → pull request → Ishan merges → the website and app update automatically.
