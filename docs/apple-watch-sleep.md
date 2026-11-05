@@ -21,8 +21,8 @@ In the Wellness app, open the **Sleep** tab and find **Apple Watch sleep** (sign
 
 1. Open the **Shortcuts** app and tap **+** (top right). Rename it **Send Sleep to Wellness**.
 2. Tap **Add Action**, search **Find Health Samples**, and add it.
-   - Set **Type** to **Sleep Analysis**.
-   - Tap **Add Filter**, pick **Start Date**, then **is in the last** → **18 hours**.
+   - Set **Type** to **Sleep** (tap **Allow Access** and turn on **Sleep** if asked).
+   - Set the **Start Date** filter to **is in the last** → **1** → **day**.
    - Set **Sort by** to **Start Date**, **Oldest First**.
 3. Add the action **Repeat with Each**. It should say *Repeat with each item in Health Samples*.
 4. Inside the repeat (between *Repeat* and *End Repeat*), add a **Text** action and fill it like this,
@@ -31,20 +31,21 @@ In the Wellness app, open the **Sleep** tab and find **Apple Watch sleep** (sign
    `Repeat Item › Value` `|` `Repeat Item › Start Date` `|` `Repeat Item › End Date`
 
    - To insert one: tap in the text box, tap **Repeat Item** above the keyboard, then tap the blue
-     **Repeat Item** you inserted and choose **Value** (or **Start Date** / **End Date**).
+     **Repeat Item** you inserted and choose **Value** (or **Start Date** / **End Date**). The first bubble
+     keeps saying "Repeat Item" even when Value is ticked; that's fine.
+   - The `|` key is on the symbols keyboard: tap **123**, then **#+=**.
    - For **Start Date** and **End Date**: tap the blue date, set **Date Format** to **ISO 8601**,
      and turn on **Include ISO 8601 Time**.
 5. Below **End Repeat**, add **Combine Text**. Set it to combine **Repeat Results** with **New Lines**.
 6. Add **Get Contents of URL**.
+   - If Shortcuts pre-filled **Combined Text** as the address, tap it and choose **Clear Variable** first.
    - Tap **URL** and paste the **Web address**.
    - Tap the arrow (›) to show more options. Set **Method** to **POST**.
-   - Under **Headers**, tap **Add new header** twice:
-     - `apikey` → paste the **Key**
-     - `Authorization` → type `Bearer ` (with a space), then paste the **Key**
+   - Under **Headers**, tap **Add new header**: `apikey` → paste the **Key**
    - Set **Request Body** to **JSON** and tap **Add new field** → **Text** twice:
      - `p_token` → paste **Your code**
      - `p_samples` → tap the value box and pick **Combined Text** above the keyboard
-7. Add **Show Notification** and set its text to **Contents of URL**. This tells you if it worked.
+7. Add **Show Notification**. It fills in **Contents of URL** by itself. This tells you if it worked.
 8. Tap **Done**.
 
 ### Try it
@@ -67,7 +68,7 @@ Running it more than once a day is fine: it just updates that night.
 | Message | What to do |
 | --- | --- |
 | *Unknown code* | Copy **Your code** again from the Sleep tab and paste it into `p_token`. |
-| *No sleep found in the last day* | Wear your watch to bed with sleep tracking on (Health › Sleep). Check the Start Date filter says 18 hours. |
+| *No sleep found in the last day* | Wear your watch to bed with sleep tracking on (Health › Sleep). Check the Start Date filter says 1 day. |
 | Nothing new in the app | Pull down on the Sleep tab, or tap **Check for new sleep data** there. |
 | The automation didn't run | iPhone can block Health data while it's locked. Pick a time you're usually using your phone, or tap the Shortcut by hand. |
 
