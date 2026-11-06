@@ -27,7 +27,13 @@
     "scheme": "wellness",
     "plugins": [
       "expo-router",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Wellness uses the camera to scan food barcodes."
+        }
+      ]
     ],
     "owner": "ishandas420",
     "extra": {
