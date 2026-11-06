@@ -1,6 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { BarcodeScanner } from '../../components/BarcodeScanner';
 import { card, colors, Screen } from '../../components/Screen';
 import {
   ACTIVITY_LEVELS,
@@ -147,6 +148,7 @@ function CalorieBar({ eaten, goal }: { eaten: number; goal: number }) {
 function AddFood({ onAdd }: { onAdd: (f: FoodEntry) => void }) {
   const [name, setName] = useState('');
   const [cal, setCal] = useState('');
+  const [scanning, setScanning] = useState(false);
   const calories = parseInt(cal, 10);
   const ok = name.trim().length > 0 && calories > 0 && calories < 10000;
   const add = () => {
@@ -158,6 +160,10 @@ function AddFood({ onAdd }: { onAdd: (f: FoodEntry) => void }) {
   return (
     <View style={card.box}>
       <Text style={card.heading}>Add food</Text>
+      <Pressable onPress={() => setScanning(true)} style={styles.scanButton}>
+        <Text style={styles.scanText}>📷  Scan a barcode</Text>
+      </Pressable>
+      <Text style={styles.or}>or type it in</Text>
       <View style={styles.addRow}>
         <TextInput
           value={name}
@@ -180,6 +186,14 @@ function AddFood({ onAdd }: { onAdd: (f: FoodEntry) => void }) {
       <Pressable onPress={add} disabled={!ok} style={[styles.button, !ok && { opacity: 0.4 }]}>
         <Text style={styles.buttonText}>Add</Text>
       </Pressable>
+      <BarcodeScanner
+        visible={scanning}
+        onClose={() => setScanning(false)}
+        onAdd={(foodName, foodCalories) => {
+          setScanning(false);
+          onAdd({ id: newId(), name: foodName, calories: foodCalories, at: new Date().toISOString() });
+        }}
+      />
     </View>
   );
 }
@@ -341,6 +355,9 @@ const styles = StyleSheet.create({
   optionHint: { fontSize: 13, color: colors.muted, marginTop: 2 },
   chipText: { fontSize: 16, fontWeight: '600', color: colors.ink },
   button: { marginTop: 12, backgroundColor: colors.ink, borderRadius: 14, padding: 14, alignItems: 'center' },
+  scanButton: { backgroundColor: colors.ink, borderRadius: 14, padding: 16, alignItems: 'center' },
+  scanText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  or: { textAlign: 'center', color: colors.muted, fontSize: 13, marginVertical: 10 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   barCard: { marginBottom: 6, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   barTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 },
