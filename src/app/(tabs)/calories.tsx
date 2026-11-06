@@ -3,12 +3,15 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { card, colors, Screen } from '../../components/Screen';
 import {
+  ACTIVITY_LEVELS,
   calculatePlan,
+  getActivity,
   loadDay,
   loadProfile,
   saveDay,
   saveProfile,
   todayKey,
+  type ActivityLevel,
   type CalorieProfile,
   type FoodEntry,
   type Sex,
@@ -36,12 +39,13 @@ export default function CaloriesScreen() {
 
   if (profile === undefined) return <Screen title="Cal Counter">{null}</Screen>;
 
-  if (!profile || editing) {
+  // Profiles saved before the activity question existed get asked once more.
+  if (!profile || editing || !profile.activity) {
     return (
       <Screen title="Cal Counter" subtitle="A few questions to work out your daily calories">
         <Questionnaire
           initial={profile}
-          onCancel={profile ? () => setEditing(false) : undefined}
+          onCancel={profile?.activity ? () => setEditing(false) : undefined}
           onDone={async (p) => {
             await saveProfile(p);
             setProfile(p);
@@ -104,7 +108,8 @@ export default function CaloriesScreen() {
           <Text style={styles.muted}>At this pace, you'd reach your goal in about {plan.weeksToGoal} weeks.</Text>
         ) : null}
         <Text style={styles.small}>
-          Based on your age, height, sex and weight, with light daily activity. Your body burns about{' '}
+          Based on your age, height, sex, weight and {getActivity(profile.activity).label.toLowerCase()}. Your body burns
+          about{' '}
           {plan.maintenance.toLocaleString()} calories a day.
         </Text>
         <Pressable onPress={() => setEditing(true)}>
@@ -194,6 +199,7 @@ function Questionnaire({
   const [sex, setSex] = useState<Sex | null>(initial?.sex ?? null);
   const [weight, setWeight] = useState(initial ? String(initial.weightLb) : '');
   const [goal, setGoal] = useState(initial ? String(initial.goalWeightLb) : '');
+  const [activity, setActivity] = useState<ActivityLevel | null>(initial?.activity ?? null);
 
   const num = (s: string) => parseFloat(s);
   const heightIn = num(feet) * 12 + (num(inches) || 0);
@@ -203,6 +209,7 @@ function Questionnaire({
   if (!sex) problems.push('sex');
   if (!(num(weight) >= 70 && num(weight) <= 600)) problems.push('weight');
   if (!(num(goal) >= 70 && num(goal) <= 600)) problems.push('goal weight');
+  if (!activity) problems.push('daily activity');
   const ok = problems.length === 0;
 
   const digits = (set: (s: string) => void, decimal = false) => (t: string) =>
@@ -251,12 +258,29 @@ function Questionnaire({
         </View>
       </Field>
 
+      <Field label="Daily activity">
+        {ACTIVITY_LEVELS.map((a) => (
+          <Pressable
+            key={a.id}
+            onPress={() => setActivity(a.id)}
+            style={[styles.option, activity === a.id && styles.chipOn]}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: activity === a.id }}
+          >
+            <Text style={[styles.chipText, activity === a.id && { color: '#fff' }]}>{a.label}</Text>
+            <Text style={[styles.optionHint, activity === a.id && { color: 'rgba(255,255,255,0.75)' }]}>{a.hint}</Text>
+          </Pressable>
+        ))}
+      </Field>
+
       <Pressable
         disabled={!ok}
         style={[styles.button, { marginTop: 20 }, !ok && { opacity: 0.4 }]}
         onPress={() =>
           sex &&
+          activity &&
           onDone({
+            activity,
             age: Math.round(num(age)),
             heightIn: Math.round(heightIn),
             sex,
@@ -306,6 +330,15 @@ const styles = StyleSheet.create({
   unit: { fontSize: 15, color: colors.muted, fontWeight: '600' },
   chip: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg, alignItems: 'center' },
   chipOn: { backgroundColor: colors.ink, borderColor: colors.ink },
+  option: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.bg,
+    marginBottom: 8,
+  },
+  optionHint: { fontSize: 13, color: colors.muted, marginTop: 2 },
   chipText: { fontSize: 16, fontWeight: '600', color: colors.ink },
   button: { marginTop: 12, backgroundColor: colors.ink, borderRadius: 14, padding: 14, alignItems: 'center' },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
