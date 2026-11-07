@@ -8,6 +8,8 @@ import {
   calculatePlan,
   getActivity,
   loadDay,
+  MEALS,
+  mealOf,
   loadProfile,
   saveDay,
   saveProfile,
@@ -15,6 +17,7 @@ import {
   type ActivityLevel,
   type CalorieProfile,
   type FoodEntry,
+  type MealId,
   type Sex,
 } from '../../lib/nutrition';
 import { newId } from '../../lib/reminders';
@@ -24,6 +27,7 @@ export default function CaloriesScreen() {
   const [editing, setEditing] = useState(false);
   const [day, setDay] = useState(todayKey());
   const [foods, setFoods] = useState<FoodEntry[]>([]);
+  const [scanMeal, setScanMeal] = useState<MealId | null>(null);
 
   useEffect(() => {
     loadProfile().then(setProfile);
@@ -67,34 +71,28 @@ export default function CaloriesScreen() {
 
   return (
     <Screen title="Cal Counter" subtitle="Today" pinned={<CalorieBar eaten={eaten} goal={plan.dailyCalories} />}>
-      <AddFood onAdd={(f) => updateFoods([...foods, f])} />
+      {MEALS.map((m) => (
+        <MealSection
+          key={m.id}
+          meal={m}
+          foods={foods.filter((f) => mealOf(f) === m.id)}
+          onAdd={(name, calories) =>
+            updateFoods([...foods, { id: newId(), name, calories, at: new Date().toISOString(), meal: m.id }])
+          }
+          onRemove={(id) => updateFoods(foods.filter((x) => x.id !== id))}
+          onScan={() => setScanMeal(m.id)}
+        />
+      ))}
 
-      <View style={card.box}>
-        <Text style={card.heading}>Eaten today</Text>
-        {foods.length === 0 ? (
-          <Text style={styles.muted}>Nothing yet. Add your first food above.</Text>
-        ) : (
-          foods.map((f) => (
-            <View key={f.id} style={styles.foodRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.foodName}>{f.name}</Text>
-                <Text style={styles.muted}>
-                  {new Date(f.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                </Text>
-              </View>
-              <Text style={styles.foodCal}>{f.calories} cal</Text>
-              <Pressable
-                onPress={() => updateFoods(foods.filter((x) => x.id !== f.id))}
-                accessibilityLabel={`Remove ${f.name}`}
-                hitSlop={10}
-                style={{ paddingLeft: 12 }}
-              >
-                <Text style={styles.remove}>✕</Text>
-              </Pressable>
-            </View>
-          ))
-        )}
-      </View>
+      <BarcodeScanner
+        visible={scanMeal !== null}
+        onClose={() => setScanMeal(null)}
+        onAdd={(name, calories) => {
+          const meal = scanMeal ?? 'snack';
+          setScanMeal(null);
+          updateFoods([...foods, { id: newId(), name, calories, at: new Date().toISOString(), meal }]);
+        }}
+      />
 
       <View style={card.box}>
         <Text style={card.heading}>Your plan</Text>
@@ -145,55 +143,99 @@ function CalorieBar({ eaten, goal }: { eaten: number; goal: number }) {
   );
 }
 
-function AddFood({ onAdd }: { onAdd: (f: FoodEntry) => void }) {
+function MealSection({
+  meal,
+  foods,
+  onAdd,
+  onRemove,
+  onScan,
+}: {
+  meal: (typeof MEALS)[number];
+  foods: FoodEntry[];
+  onAdd: (name: string, calories: number) => void;
+  onRemove: (id: string) => void;
+  onScan: () => void;
+}) {
+  const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [cal, setCal] = useState('');
-  const [scanning, setScanning] = useState(false);
   const calories = parseInt(cal, 10);
   const ok = name.trim().length > 0 && calories > 0 && calories < 10000;
+  const total = foods.reduce((s, f) => s + f.calories, 0);
+  const noun = meal.id === 'snack' ? 'snack' : meal.label.toLowerCase();
+
   const add = () => {
     if (!ok) return;
-    onAdd({ id: newId(), name: name.trim(), calories, at: new Date().toISOString() });
+    onAdd(name.trim(), calories);
     setName('');
     setCal('');
+    setAdding(false);
   };
+
   return (
     <View style={card.box}>
-      <Text style={card.heading}>Add food</Text>
-      <Pressable onPress={() => setScanning(true)} style={styles.scanButton}>
-        <Text style={styles.scanText}>📷  Scan a barcode</Text>
-      </Pressable>
-      <Text style={styles.or}>or type it in</Text>
-      <View style={styles.addRow}>
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          placeholder="What did you eat?"
-          placeholderTextColor="#9A948C"
-          style={[styles.input, { flex: 1 }]}
-          returnKeyType="next"
-        />
-        <TextInput
-          value={cal}
-          onChangeText={(t) => setCal(t.replace(/[^0-9]/g, ''))}
-          placeholder="Cal"
-          placeholderTextColor="#9A948C"
-          keyboardType="number-pad"
-          style={[styles.input, { width: 80 }]}
-          onSubmitEditing={add}
-        />
+      <View style={styles.mealHead}>
+        <Text style={styles.mealTitle}>
+          {meal.emoji} {meal.label}
+        </Text>
+        <Text style={styles.mealTotal}>{total > 0 ? `${total.toLocaleString()} cal` : ''}</Text>
       </View>
-      <Pressable onPress={add} disabled={!ok} style={[styles.button, !ok && { opacity: 0.4 }]}>
-        <Text style={styles.buttonText}>Add</Text>
-      </Pressable>
-      <BarcodeScanner
-        visible={scanning}
-        onClose={() => setScanning(false)}
-        onAdd={(foodName, foodCalories) => {
-          setScanning(false);
-          onAdd({ id: newId(), name: foodName, calories: foodCalories, at: new Date().toISOString() });
-        }}
-      />
+
+      {foods.map((f) => (
+        <View key={f.id} style={styles.foodRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.foodName}>{f.name}</Text>
+            <Text style={styles.muted}>
+              {new Date(f.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+            </Text>
+          </View>
+          <Text style={styles.foodCal}>{f.calories} cal</Text>
+          <Pressable onPress={() => onRemove(f.id)} accessibilityLabel={`Remove ${f.name}`} hitSlop={10} style={{ paddingLeft: 12 }}>
+            <Text style={styles.remove}>✕</Text>
+          </Pressable>
+        </View>
+      ))}
+
+      {adding ? (
+        <View style={{ marginTop: 12 }}>
+          <View style={styles.addRow}>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="What did you eat?"
+              placeholderTextColor="#9A948C"
+              style={[styles.input, { flex: 1 }]}
+              autoFocus
+            />
+            <TextInput
+              value={cal}
+              onChangeText={(t) => setCal(t.replace(/[^0-9]/g, ''))}
+              placeholder="Cal"
+              placeholderTextColor="#9A948C"
+              keyboardType="number-pad"
+              style={[styles.input, { width: 80 }]}
+              onSubmitEditing={add}
+            />
+          </View>
+          <View style={[styles.addRow, { marginTop: 10 }]}>
+            <Pressable onPress={() => setAdding(false)} style={[styles.lightButton, { flex: 1 }]}>
+              <Text style={styles.lightText}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={add} disabled={!ok} style={[styles.darkButton, { flex: 1 }, !ok && { opacity: 0.4 }]}>
+              <Text style={styles.buttonText}>Add</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <View style={[styles.addRow, { marginTop: foods.length ? 12 : 4 }]}>
+          <Pressable onPress={() => setAdding(true)} style={[styles.lightButton, { flex: 1 }]}>
+            <Text style={styles.lightText}>+ Add {noun}</Text>
+          </Pressable>
+          <Pressable onPress={onScan} style={styles.lightButton} accessibilityLabel={`Scan a barcode for ${noun}`}>
+            <Text style={styles.lightText}>📷 Scan</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -355,6 +397,20 @@ const styles = StyleSheet.create({
   optionHint: { fontSize: 13, color: colors.muted, marginTop: 2 },
   chipText: { fontSize: 16, fontWeight: '600', color: colors.ink },
   button: { marginTop: 12, backgroundColor: colors.ink, borderRadius: 14, padding: 14, alignItems: 'center' },
+  mealHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  mealTitle: { fontSize: 18, fontWeight: '700', color: colors.ink },
+  mealTotal: { fontSize: 15, fontWeight: '700', color: colors.muted },
+  lightButton: {
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  lightText: { fontSize: 15, fontWeight: '700', color: colors.ink },
+  darkButton: { backgroundColor: colors.ink, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
   scanButton: { backgroundColor: colors.ink, borderRadius: 14, padding: 16, alignItems: 'center' },
   scanText: { color: '#fff', fontSize: 17, fontWeight: '700' },
   or: { textAlign: 'center', color: colors.muted, fontSize: 13, marginVertical: 10 },
