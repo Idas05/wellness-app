@@ -175,9 +175,7 @@ function MealSection({
   return (
     <View style={card.box}>
       <View style={styles.mealHead}>
-        <Text style={styles.mealTitle}>
-          {meal.emoji} {meal.label}
-        </Text>
+        <Text style={styles.mealTitle}>{meal.label}</Text>
         <Text style={styles.mealTotal}>{total > 0 ? `${total.toLocaleString()} cal` : ''}</Text>
       </View>
 

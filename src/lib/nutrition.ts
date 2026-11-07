@@ -26,10 +26,10 @@ export type CalorieProfile = {
 };
 
 export const MEALS = [
-  { id: 'breakfast', label: 'Breakfast', emoji: '🍳' },
-  { id: 'lunch', label: 'Lunch', emoji: '🥗' },
-  { id: 'dinner', label: 'Dinner', emoji: '🍲' },
-  { id: 'snack', label: 'Snacks', emoji: '🍎' },
+  { id: 'breakfast', label: 'Breakfast' },
+  { id: 'lunch', label: 'Lunch' },
+  { id: 'dinner', label: 'Dinner' },
+  { id: 'snack', label: 'Snacks' },
 ] as const;
 
 export type MealId = (typeof MEALS)[number]['id'];
