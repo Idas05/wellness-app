@@ -9,6 +9,7 @@ const TABS: Record<string, { label: string; icon: IconName; iconActive: IconName
   index: { label: 'Reminders', icon: 'notifications-outline', iconActive: 'notifications' },
   sleep: { label: 'Sleep', icon: 'moon-outline', iconActive: 'moon' },
   calories: { label: 'Cal Counter', icon: 'restaurant-outline', iconActive: 'restaurant' },
+  workout: { label: 'Workout', icon: 'barbell-outline', iconActive: 'barbell' },
 };
 
 function PillTabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
@@ -52,6 +53,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: 'Reminders' }} />
       <Tabs.Screen name="sleep" options={{ title: 'Sleep' }} />
       <Tabs.Screen name="calories" options={{ title: 'Cal Counter' }} />
+      <Tabs.Screen name="workout" options={{ title: 'Workout' }} />
     </Tabs>
   );
 }

@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { BarcodeScanner } from '../../components/BarcodeScanner';
@@ -113,6 +113,9 @@ export default function CaloriesScreen() {
         </Text>
         <Pressable onPress={() => setEditing(true)}>
           <Text style={styles.link}>Update my details ›</Text>
+        </Pressable>
+        <Pressable onPress={() => router.navigate('/workout')} accessibilityRole="link">
+          <Text style={styles.link}>Workout ›</Text>
         </Pressable>
       </View>
     </Screen>
