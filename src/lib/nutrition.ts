@@ -25,7 +25,26 @@ export type CalorieProfile = {
   activity?: ActivityLevel; // older saved profiles don't have it; treated as light
 };
 
-export type FoodEntry = { id: string; name: string; calories: number; at: string };
+export const MEALS = [
+  { id: 'breakfast', label: 'Breakfast' },
+  { id: 'lunch', label: 'Lunch' },
+  { id: 'dinner', label: 'Dinner' },
+  { id: 'snack', label: 'Snacks' },
+] as const;
+
+export type MealId = (typeof MEALS)[number]['id'];
+
+export type FoodEntry = { id: string; name: string; calories: number; at: string; meal?: MealId };
+
+/** Foods logged before meal sections existed are sorted in by the time they were added. */
+export function mealOf(f: FoodEntry): MealId {
+  if (f.meal) return f.meal;
+  const h = new Date(f.at).getHours();
+  if (h >= 4 && h < 11) return 'breakfast';
+  if (h >= 11 && h < 16) return 'lunch';
+  if (h >= 16 && h < 22) return 'dinner';
+  return 'snack';
+}
 
 const PROFILE_KEY = 'wellness.calorieProfile.v1';
 const LOG_KEY = 'wellness.foodLog.v1';
