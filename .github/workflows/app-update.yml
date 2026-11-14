@@ -27,6 +27,11 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
       - run: npm ci
+      # A "main" channel that always points at the newest update, so one saved
+      # Expo Go link keeps loading the latest version. Safe to run every time.
+      - run: |
+          eas channel:create main --non-interactive || true
+          eas channel:edit main --branch main --non-interactive || true
       - run: eas update --branch main --message "$MESSAGE" --platform ios --non-interactive
         env:
           MESSAGE: ${{ github.event.head_commit.message || 'Manual publish' }}

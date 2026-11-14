@@ -32,4 +32,6 @@ npx expo start --web  # opens the website in your browser
 
 ## Online
 - Website: https://idas05.github.io/wellness-app (published on every merge to main)
-- App: published to Expo Go on every merge to main, so it opens without your Mac
+- App: published to Expo Go on every merge to main, so it opens without your Mac.
+  Open it on the iPhone with this link, which always loads the newest version:
+  `exp://u.expo.dev/45d3e503-4f37-4edd-8b55-7aa9f79f5b13?channel-name=main&runtime-version=exposdk:58.0.0`
