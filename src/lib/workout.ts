@@ -51,51 +51,52 @@ const CARDIO = [
 
 type Move = { name: string; main?: true; fixed?: string; note?: string };
 
+// Isolation moves only: each one works a single joint, no compound lifts.
 const PUSH_A: Move[] = [
-  { name: 'Barbell bench press', main: true },
-  { name: 'Overhead press', note: 'Standing, barbell or dumbbells' },
-  { name: 'Incline dumbbell press' },
-  { name: 'Lateral raise' },
+  { name: 'Pec deck fly', main: true },
+  { name: 'Cable crossover' },
+  { name: 'Dumbbell lateral raise' },
+  { name: 'Dumbbell front raise' },
   { name: 'Triceps rope pushdown' },
-  { name: 'Overhead triceps extension' },
+  { name: 'Overhead cable triceps extension' },
 ];
 const PULL_A: Move[] = [
-  { name: 'Deadlift', main: true },
-  { name: 'Pull-ups', note: 'Use the assisted machine or lat pulldown if needed' },
-  { name: 'Barbell row' },
-  { name: 'Face pull' },
-  { name: 'Barbell curl' },
+  { name: 'Straight-arm cable pulldown', main: true },
+  { name: 'Dumbbell pullover' },
+  { name: 'Reverse pec deck', note: 'For the rear shoulders' },
+  { name: 'Dumbbell shrug' },
+  { name: 'EZ-bar curl' },
   { name: 'Hammer curl' },
 ];
 const LEGS_A: Move[] = [
-  { name: 'Back squat', main: true },
-  { name: 'Romanian deadlift' },
-  { name: 'Leg press' },
+  { name: 'Leg extension', main: true },
   { name: 'Lying leg curl' },
+  { name: 'Cable glute kickback', note: 'Sets are per leg' },
+  { name: 'Hip abduction machine' },
   { name: 'Standing calf raise' },
   { name: 'Plank', fixed: '3 × 45 sec' },
 ];
 const PUSH_B: Move[] = [
-  { name: 'Incline barbell press', main: true },
-  { name: 'Seated dumbbell shoulder press' },
-  { name: 'Machine chest press' },
-  { name: 'Cable chest fly' },
-  { name: 'Lateral raise' },
-  { name: 'Dips', note: 'Use the assisted machine if needed' },
+  { name: 'Incline cable fly', main: true },
+  { name: 'Flat dumbbell fly' },
+  { name: 'Cable lateral raise', note: 'Sets are per arm' },
+  { name: 'Machine lateral raise' },
+  { name: 'Skull crusher' },
+  { name: 'Dumbbell triceps kickback' },
 ];
 const PULL_B: Move[] = [
-  { name: 'Lat pulldown', main: true },
-  { name: 'Seated cable row' },
-  { name: 'Chest-supported dumbbell row' },
-  { name: 'Rear delt fly' },
-  { name: 'Incline dumbbell curl' },
+  { name: 'Cable pullover', main: true, note: 'Rope or bar, arms nearly straight' },
+  { name: 'Single-arm straight-arm pulldown', note: 'Sets are per arm' },
+  { name: 'Cable rear delt fly' },
+  { name: 'Barbell shrug' },
   { name: 'Preacher curl' },
+  { name: 'Incline dumbbell curl' },
 ];
 const LEGS_B: Move[] = [
-  { name: 'Hack squat', main: true, note: 'Or front squat' },
-  { name: 'Hip thrust' },
-  { name: 'Bulgarian split squat', note: 'Sets are per leg' },
-  { name: 'Leg extension' },
+  { name: 'Seated leg curl', main: true },
+  { name: 'Single-leg extension', note: 'Sets are per leg' },
+  { name: 'Hip adduction machine' },
+  { name: 'Hip abduction machine' },
   { name: 'Seated calf raise' },
   { name: 'Hanging knee raise', fixed: '3 × 12–15' },
 ];
