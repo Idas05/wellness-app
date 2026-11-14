@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { CalorieProfile } from './nutrition';
 
 export type Goal = 'lose' | 'gain' | 'maintain';
@@ -8,7 +9,7 @@ export type WorkoutDay = {
   title: string; // Push, Pull, Legs, Rest
   focus: string;
   exercises: Exercise[];
-  cardio: { minutes: number; what: string; how: string } | null;
+  cardio: { minutes: number; what: string; setting: string; how: string } | null;
 };
 export type WorkoutPlan = {
   goal: Goal;
@@ -42,7 +43,11 @@ export function cardioMinutes(goal: Goal, poundsToGo: number): number {
   return 30;
 }
 
-const CARDIO = ['Incline treadmill walk', 'Stationary bike', 'Stair climber', 'Elliptical', 'Rowing machine', 'Incline treadmill walk'];
+// Two cardio options, taking turns day by day.
+const CARDIO = [
+  { what: 'Incline treadmill walk', setting: 'Incline 12, speed 3' },
+  { what: 'StairMaster', setting: 'A steady level you can keep the whole time' },
+];
 
 type Move = { name: string; main?: true; fixed?: string; note?: string };
 
@@ -121,14 +126,14 @@ export function buildWorkoutPlan(p: CalorieProfile): WorkoutPlan {
   let lift = 0;
   const days = WEEK.map((d, weekday): WorkoutDay => {
     if (!d.moves) return { weekday, short: SHORT[weekday], title: d.title, focus: d.focus, exercises: [], cardio: null };
-    const what = CARDIO[lift++ % CARDIO.length];
+    const c = CARDIO[lift++ % CARDIO.length];
     return {
       weekday,
       short: SHORT[weekday],
       title: d.title,
       focus: d.focus,
       exercises: d.moves.map((m) => ({ name: m.name, sets: m.fixed ?? (m.main ? style.main : style.accessory), note: m.note })),
-      cardio: { minutes, what, how: CARDIO_HOW[goal] },
+      cardio: { minutes, what: c.what, setting: c.setting, how: CARDIO_HOW[goal] },
     };
   });
 
@@ -140,4 +145,52 @@ export function buildWorkoutPlan(p: CalorieProfile): WorkoutPlan {
         : `Built to stay at ${p.weightLb} lb and get stronger.`;
 
   return { goal, poundsToGo, summary, repStyle: style.repStyle, rest: style.rest, cardioMinutes: minutes, days };
+}
+
+/** How many sets a prescription like "3 × 12–15" asks for. */
+export function setCount(sets: string): number {
+  const n = parseInt(sets, 10);
+  return Number.isFinite(n) && n > 0 ? n : 3;
+}
+
+// ---- Weight and reps log, kept on this device ----
+
+export type LoggedSet = { weight: string; reps: string };
+/** date (YYYY-MM-DD) → exercise name → sets */
+type WorkoutLog = Record<string, Record<string, LoggedSet[]>>;
+const WORKOUT_LOG_KEY = 'wellness.workoutLog.v1';
+
+async function loadAll(): Promise<WorkoutLog> {
+  try {
+    const raw = await AsyncStorage.getItem(WORKOUT_LOG_KEY);
+    return raw ? (JSON.parse(raw) as WorkoutLog) : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function loadWorkoutDay(date: string): Promise<Record<string, LoggedSet[]>> {
+  return (await loadAll())[date] ?? {};
+}
+
+export async function saveWorkoutDay(date: string, day: Record<string, LoggedSet[]>): Promise<void> {
+  const all = await loadAll();
+  all[date] = day;
+  await AsyncStorage.setItem(WORKOUT_LOG_KEY, JSON.stringify(all));
+}
+
+export const isFilled = (s: LoggedSet) => s.reps.trim() !== '' || s.weight.trim() !== '';
+
+/** The most recent day before `date` that has sets logged for each exercise. */
+export async function loadLastTimes(date: string): Promise<Record<string, { date: string; sets: LoggedSet[] }>> {
+  const all = await loadAll();
+  const out: Record<string, { date: string; sets: LoggedSet[] }> = {};
+  for (const d of Object.keys(all).sort().reverse()) {
+    if (d >= date) continue;
+    for (const [name, sets] of Object.entries(all[d])) {
+      const done = sets.filter(isFilled);
+      if (!out[name] && done.length) out[name] = { date: d, sets: done };
+    }
+  }
+  return out;
 }
