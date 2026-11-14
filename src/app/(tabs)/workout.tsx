@@ -100,7 +100,7 @@ export default function WorkoutScreen() {
 
         {day.exercises.length > 0 ? (
           <Text style={styles.hint}>
-            {selected === today ? 'Tap an exercise to log your weight and reps.' : 'You can log sets on the day itself.'}
+            Tap an exercise to log your weight and reps. Sets are saved to today.
           </Text>
         ) : null}
 
@@ -109,8 +109,8 @@ export default function WorkoutScreen() {
             key={e.name}
             first={i === 0}
             exercise={e}
-            canLog={selected === today}
-            open={open === e.name && selected === today}
+            canLog
+            open={open === e.name}
             onToggle={() => setOpen((o) => (o === e.name ? null : e.name))}
             sets={log[e.name]}
             last={lastTimes[e.name]}
