@@ -27,6 +27,8 @@ jobs:
       - run: npx expo export --platform web
         env:
           EXPO_BASE_URL: /wellness-app
+      # The Check Form page's free pose tracker (MediaPipe) and its model.
+      - run: bash scripts/form-check-assets.sh dist
       # Let GitHub Pages serve the app for any address, not just the home page.
       - run: cp dist/index.html dist/404.html && touch dist/.nojekyll
       - uses: actions/upload-pages-artifact@v3
