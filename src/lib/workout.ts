@@ -195,3 +195,47 @@ export async function loadLastTimes(date: string): Promise<Record<string, { date
   }
   return out;
 }
+
+// ---- Locked ("set in stone") history, used for the progress spreadsheet ----
+
+export type HistoryEntry = { date: string; day: string; exercise: string; sets: LoggedSet[]; lockedAt: string };
+const HISTORY_KEY = 'wellness.workoutHistory.v1';
+
+export async function loadHistory(): Promise<HistoryEntry[]> {
+  try {
+    const raw = await AsyncStorage.getItem(HISTORY_KEY);
+    return raw ? (JSON.parse(raw) as HistoryEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Saves an exercise's sets for good. Only filled-in sets are kept. */
+export async function lockExercise(date: string, day: string, exercise: string, sets: LoggedSet[]): Promise<HistoryEntry[]> {
+  const history = await loadHistory();
+  const done = sets.filter(isFilled);
+  if (!done.length || history.some((h) => h.date === date && h.exercise === exercise)) return history;
+  const next = [...history, { date, day, exercise, sets: done, lockedAt: new Date().toISOString() }];
+  await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+  return next;
+}
+
+const num = (s: string) => parseFloat(s) || 0;
+export const topWeight = (sets: LoggedSet[]) => Math.max(0, ...sets.map((s) => num(s.weight)));
+export const volume = (sets: LoggedSet[]) => sets.reduce((t, s) => t + num(s.weight) * num(s.reps), 0);
+
+/** One row per set, ready to open in Excel, Numbers or Google Sheets. */
+export function historyCsv(history: HistoryEntry[]): string {
+  const cell = (v: string | number) => {
+    const s = String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const rows = [['Date', 'Day', 'Exercise', 'Set', 'Weight (lb)', 'Reps', 'Volume (lb)']];
+  const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date) || a.lockedAt.localeCompare(b.lockedAt));
+  for (const h of sorted) {
+    h.sets.forEach((s, i) => {
+      rows.push([h.date, h.day, h.exercise, String(i + 1), s.weight, s.reps, String(Math.round(num(s.weight) * num(s.reps)))]);
+    });
+  }
+  return rows.map((r) => r.map(cell).join(',')).join('\n') + '\n';
+}

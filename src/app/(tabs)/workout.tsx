@@ -1,16 +1,19 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { card, colors, Screen } from '../../components/Screen';
 import { loadProfile, todayKey, type CalorieProfile } from '../../lib/nutrition';
 import {
   buildWorkoutPlan,
   isFilled,
+  loadHistory,
   loadLastTimes,
   loadWorkoutDay,
+  lockExercise,
   saveWorkoutDay,
   setCount,
   type Exercise,
+  type HistoryEntry,
   type LoggedSet,
 } from '../../lib/workout';
 
@@ -22,6 +25,7 @@ export default function WorkoutScreen() {
   const [log, setLog] = useState<Record<string, LoggedSet[]>>({});
   const [lastTimes, setLastTimes] = useState<Record<string, { date: string; sets: LoggedSet[] }>>({});
   const [open, setOpen] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   // Re-read every visit so changes made in the Cal Counter questions show up here.
   useFocusEffect(
@@ -31,6 +35,7 @@ export default function WorkoutScreen() {
       loadProfile().then(setProfile);
       loadWorkoutDay(d).then(setLog);
       loadLastTimes(d).then(setLastTimes);
+      loadHistory().then(setHistory);
     }, []),
   );
 
@@ -41,6 +46,23 @@ export default function WorkoutScreen() {
       return next;
     });
   };
+
+  const lock = (dayTitle: string, name: string, sets: LoggedSet[]) => {
+    const go = async () => {
+      setHistory(await lockExercise(date, dayTitle, name, sets));
+      setOpen(null);
+    };
+    const msg = `${name}: ${summary(sets)}. You won't be able to change it after this.`;
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Set in stone?\n\n${msg}`)) go();
+    } else {
+      Alert.alert('Set in stone?', msg, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Set in stone', onPress: go },
+      ]);
+    }
+  };
+  const lockedToday = new Set(history.filter((h) => h.date === date).map((h) => h.exercise));
 
   if (profile === undefined) return <Screen title="Workout">{null}</Screen>;
 
@@ -115,6 +137,8 @@ export default function WorkoutScreen() {
             sets={log[e.name]}
             last={lastTimes[e.name]}
             onChange={(sets) => updateSets(e.name, sets)}
+            locked={lockedToday.has(e.name)}
+            onLock={(sets) => lock(day.title, e.name, sets)}
           />
         ))}
 
@@ -135,6 +159,18 @@ export default function WorkoutScreen() {
           <Text style={styles.muted}>{day.cardio.how}</Text>
         </View>
       ) : null}
+
+      <View style={card.box}>
+        <Text style={card.heading}>Progress</Text>
+        <Text style={styles.body}>
+          {history.length
+            ? `${history.length} exercise${history.length === 1 ? '' : 's'} set in stone over ${new Set(history.map((h) => h.date)).size} day${new Set(history.map((h) => h.date)).size === 1 ? '' : 's'}.`
+            : 'Log an exercise and tap "Set in stone" to start your progress spreadsheet.'}
+        </Text>
+        <Pressable onPress={() => router.push('/progress')} style={styles.button} accessibilityRole="button">
+          <Text style={styles.buttonText}>Open progress spreadsheet</Text>
+        </Pressable>
+      </View>
 
       <Pressable onPress={() => router.navigate('/calories')}>
         <Text style={styles.link}>Change my weight or goal ›</Text>
@@ -164,6 +200,8 @@ function ExerciseRow({
   sets,
   last,
   onChange,
+  locked,
+  onLock,
 }: {
   exercise: Exercise;
   first: boolean;
@@ -173,9 +211,12 @@ function ExerciseRow({
   sets: LoggedSet[] | undefined;
   last: { date: string; sets: LoggedSet[] } | undefined;
   onChange: (sets: LoggedSet[]) => void;
+  locked: boolean;
+  onLock: (sets: LoggedSet[]) => void;
 }) {
   const count = setCount(exercise.sets);
   const rows: LoggedSet[] = sets && sets.length ? sets : Array.from({ length: count }, () => ({ weight: '', reps: '' }));
+  const shownRows = locked ? rows.filter(isFilled) : rows;
   const doneCount = rows.filter(isFilled).length;
 
   const edit = (i: number, field: keyof LoggedSet, value: string) => {
@@ -194,8 +235,10 @@ function ExerciseRow({
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.exName}>{exercise.name}</Text>
           {exercise.note ? <Text style={styles.note}>{exercise.note}</Text> : null}
-          {canLog && doneCount > 0 && !open ? (
-            <Text style={styles.logged}>Logged: {summary(rows)}</Text>
+          {locked && !open ? (
+            <Text style={styles.logged}>Set in stone: {summary(rows)}</Text>
+          ) : canLog && doneCount > 0 && !open ? (
+            <Text style={styles.loggedDraft}>Logged: {summary(rows)}</Text>
           ) : last ? (
             <Text style={styles.note}>
               Last time: {summary(last.sets)} ({shortDate(last.date)})
@@ -203,7 +246,7 @@ function ExerciseRow({
           ) : null}
         </View>
         <Text style={styles.sets}>{exercise.sets}</Text>
-        {canLog ? <Text style={styles.chev}>{open ? '▾' : '▸'}</Text> : null}
+        {locked ? <Text style={styles.chev}>✓</Text> : canLog ? <Text style={styles.chev}>{open ? '▾' : '▸'}</Text> : null}
       </Pressable>
 
       {open ? (
@@ -213,29 +256,39 @@ function ExerciseRow({
             <Text style={[styles.logLabel, { flex: 1 }]}>Weight (lb)</Text>
             <Text style={[styles.logLabel, { flex: 1 }]}>Reps</Text>
           </View>
-          {rows.map((r, i) => (
+          {shownRows.map((r, i) => (
             <View key={i} style={styles.logRow}>
               <Text style={styles.setNum}>{i + 1}</Text>
               <TextInput
                 value={r.weight}
                 onChangeText={(t) => edit(i, 'weight', t)}
+                editable={!locked}
                 placeholder={last?.sets[i]?.weight || 'lb'}
                 placeholderTextColor="#B5AEA5"
                 keyboardType="decimal-pad"
                 accessibilityLabel={`Set ${i + 1} weight`}
-                style={styles.logInput}
+                style={[styles.logInput, locked && styles.logInputLocked]}
               />
               <TextInput
                 value={r.reps}
                 onChangeText={(t) => edit(i, 'reps', t)}
+                editable={!locked}
                 placeholder={last?.sets[i]?.reps || 'reps'}
                 placeholderTextColor="#B5AEA5"
                 keyboardType="number-pad"
                 accessibilityLabel={`Set ${i + 1} reps`}
-                style={styles.logInput}
+                style={[styles.logInput, locked && styles.logInputLocked]}
               />
             </View>
           ))}
+          {locked ? (
+            <View style={styles.logActions}>
+              <Text style={[styles.logged, { flex: 1, alignSelf: 'center' }]}>Set in stone. Saved to your progress.</Text>
+              <Pressable onPress={onToggle} style={styles.smallBtn}>
+                <Text style={styles.smallBtnText}>Close</Text>
+              </Pressable>
+            </View>
+          ) : (
           <View style={styles.logActions}>
             <Pressable onPress={() => onChange([...rows, { weight: rows[rows.length - 1]?.weight ?? '', reps: '' }])} style={styles.smallBtn}>
               <Text style={styles.smallBtnText}>+ Add set</Text>
@@ -245,10 +298,16 @@ function ExerciseRow({
                 <Text style={styles.smallBtnText}>Remove set</Text>
               </Pressable>
             ) : null}
-            <Pressable onPress={onToggle} style={[styles.smallBtn, styles.doneBtn]}>
-              <Text style={[styles.smallBtnText, { color: '#fff' }]}>Done</Text>
+            <Pressable
+              onPress={() => onLock(rows)}
+              disabled={doneCount === 0}
+              accessibilityLabel={`Set ${exercise.name} in stone`}
+              style={[styles.smallBtn, styles.doneBtn, doneCount === 0 && { opacity: 0.4 }]}
+            >
+              <Text style={[styles.smallBtnText, { color: '#fff' }]}>Set in stone</Text>
             </Pressable>
           </View>
+          )}
         </View>
       ) : null}
     </View>
@@ -283,6 +342,8 @@ const styles = StyleSheet.create({
   exBlock: { borderTopWidth: 1, borderTopColor: colors.line },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   chev: { fontSize: 14, color: colors.muted, width: 14 },
+  loggedDraft: { fontSize: 13, color: colors.muted, fontWeight: '600', marginTop: 3 },
+  logInputLocked: { backgroundColor: colors.line, color: colors.ink },
   logged: { fontSize: 13, color: '#3E8E5A', fontWeight: '600', marginTop: 3 },
   logBox: { backgroundColor: colors.bg, borderRadius: 14, padding: 12, marginBottom: 12 },
   logHead: { flexDirection: 'row', gap: 8, marginBottom: 6 },
