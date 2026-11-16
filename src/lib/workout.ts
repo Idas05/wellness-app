@@ -27,11 +27,11 @@ export function goalOf(p: CalorieProfile): Goal {
   return diff < 0 ? 'lose' : 'gain';
 }
 
-// Sets and reps depend on the goal: lighter and faster to lose, heavier with more rest to gain.
-const STYLE: Record<Goal, { main: string; accessory: string; rest: string; repStyle: string }> = {
-  lose: { main: '4 × 8–10', accessory: '3 × 12–15', rest: '45–60 sec', repStyle: 'Higher reps, short rest to keep your heart rate up' },
-  maintain: { main: '4 × 6–8', accessory: '3 × 8–12', rest: '60–90 sec', repStyle: 'Moderate reps to hold your strength and muscle' },
-  gain: { main: '4 × 5–6', accessory: '4 × 8–10', rest: '2 min', repStyle: 'Heavier weight, longer rest to build muscle' },
+// Rest between sets depends on the goal.
+const STYLE: Record<Goal, { rest: string }> = {
+  lose: { rest: '45–60 sec' },
+  maintain: { rest: '60–90 sec' },
+  gain: { rest: '2 min' },
 };
 
 // Cardio comes after every lifting day. Losing weight gets the most, gaining the least.
@@ -49,66 +49,67 @@ const CARDIO = [
   { what: 'StairMaster', setting: 'A steady level you can keep the whole time' },
 ];
 
-type Move = { name: string; main?: true; fixed?: string; note?: string };
+// Ishan's own split. Every set goes to failure.
+type Move = { name: string; sets: string; note?: string };
 
-// Isolation moves only: each one works a single joint, no compound lifts.
 const PUSH_A: Move[] = [
-  { name: 'Pec deck fly', main: true },
-  { name: 'Cable crossover' },
-  { name: 'Dumbbell lateral raise' },
-  { name: 'Dumbbell front raise' },
-  { name: 'Triceps rope pushdown' },
-  { name: 'Overhead cable triceps extension' },
+  { name: 'Barbell/DB bench press', sets: '3 × 6–8' },
+  { name: 'Seated DB shoulder press', sets: '2 × 8–10' },
+  { name: 'Incline DB press', sets: '2 × 8–10' },
+  { name: 'Lateral raises', sets: '3 × 12–15' },
+  { name: 'Tricep rope pushdowns', sets: '2 × 10–12' },
+  { name: 'Overhead tricep extension', sets: '2 × 12' },
 ];
 const PULL_A: Move[] = [
-  { name: 'Straight-arm cable pulldown', main: true },
-  { name: 'Dumbbell pullover' },
-  { name: 'Reverse pec deck', note: 'For the rear shoulders' },
-  { name: 'Dumbbell shrug' },
-  { name: 'EZ-bar curl' },
-  { name: 'Hammer curl' },
+  { name: 'Pull-ups / lat pulldown', sets: '3 × 6–8' },
+  { name: 'Barbell row', sets: '2 × 8' },
+  { name: 'Seated cable row', sets: '2 × 10' },
+  { name: 'Face pulls', sets: '2 × 15' },
+  { name: 'Barbell curl', sets: '2 × 8–10' },
+  { name: 'Hammer curl', sets: '2 × 12' },
 ];
 const LEGS_A: Move[] = [
-  { name: 'Leg extension', main: true },
-  { name: 'Lying leg curl' },
-  { name: 'Cable glute kickback', note: 'Sets are per leg' },
-  { name: 'Hip abduction machine' },
-  { name: 'Standing calf raise' },
-  { name: 'Plank', fixed: '3 × 45 sec' },
+  { name: 'Back squat', sets: '3 × 6–8' },
+  { name: 'Leg press', sets: '2 × 10' },
+  { name: 'Walking lunges', sets: '2 × 10/leg' },
+  { name: 'Leg extensions', sets: '2 × 12–15' },
+  { name: 'Standing calf raises', sets: '3 × 12' },
+  { name: 'Hanging leg raises', sets: '3 × 12–15' },
 ];
 const PUSH_B: Move[] = [
-  { name: 'Incline cable fly', main: true },
-  { name: 'Flat dumbbell fly' },
-  { name: 'Cable lateral raise', note: 'Sets are per arm' },
-  { name: 'Machine lateral raise' },
-  { name: 'Skull crusher' },
-  { name: 'Dumbbell triceps kickback' },
+  { name: 'Incline barbell press', sets: '3 × 8–10' },
+  { name: 'Machine chest press / dips', sets: '2 × 10–12' },
+  { name: 'Arnold press', sets: '2 × 10' },
+  { name: 'Cable lateral raises', sets: '3 × 15' },
+  { name: 'Cable flyes', sets: '2 × 12–15' },
+  { name: 'Skull crushers', sets: '2 × 10–12' },
 ];
 const PULL_B: Move[] = [
-  { name: 'Cable pullover', main: true, note: 'Rope or bar, arms nearly straight' },
-  { name: 'Single-arm straight-arm pulldown', note: 'Sets are per arm' },
-  { name: 'Cable rear delt fly' },
-  { name: 'Barbell shrug' },
-  { name: 'Preacher curl' },
-  { name: 'Incline dumbbell curl' },
+  { name: 'Close-grip lat pulldown', sets: '3 × 10' },
+  { name: 'Single-arm DB row', sets: '2 × 10/arm' },
+  { name: 'Chest-supported row', sets: '2 × 12' },
+  { name: 'Reverse pec deck', sets: '2 × 15' },
+  { name: 'Incline DB curl', sets: '2 × 10–12' },
+  { name: 'Cable curl', sets: '2 × 15' },
 ];
 const LEGS_B: Move[] = [
-  { name: 'Seated leg curl', main: true },
-  { name: 'Single-leg extension', note: 'Sets are per leg' },
-  { name: 'Hip adduction machine' },
-  { name: 'Hip abduction machine' },
-  { name: 'Seated calf raise' },
-  { name: 'Hanging knee raise', fixed: '3 × 12–15' },
+  { name: 'Romanian deadlift', sets: '3 × 8' },
+  { name: 'Hip thrust (machine or bar)', sets: '2 × 10' },
+  { name: 'Bulgarian split squat', sets: '2 × 8–10/leg' },
+  { name: 'Lying/seated leg curl', sets: '2 × 12' },
+  { name: 'Seated calf raises', sets: '3 × 15' },
+  { name: 'Cable crunches', sets: '3 × 15' },
+  { name: 'Plank', sets: '3 × 45–60 s', note: 'Hold to max' },
 ];
 
 const WEEK: { title: string; focus: string; moves: Move[] | null }[] = [
   { title: 'Rest', focus: 'Recover: an easy walk and some stretching', moves: null }, // Sunday
-  { title: 'Push', focus: 'Chest, shoulders, triceps', moves: PUSH_A },
-  { title: 'Pull', focus: 'Back, rear shoulders, biceps', moves: PULL_A },
-  { title: 'Legs', focus: 'Quads, hamstrings, glutes, calves, core', moves: LEGS_A },
-  { title: 'Push', focus: 'Chest, shoulders, triceps', moves: PUSH_B },
-  { title: 'Pull', focus: 'Back, rear shoulders, biceps', moves: PULL_B },
-  { title: 'Legs', focus: 'Quads, hamstrings, glutes, calves, core', moves: LEGS_B },
+  { title: 'Push', focus: 'Push A: chest, shoulders, triceps', moves: PUSH_A },
+  { title: 'Pull', focus: 'Pull A: back, rear shoulders, biceps', moves: PULL_A },
+  { title: 'Legs', focus: 'Legs A: quads, calves, core', moves: LEGS_A },
+  { title: 'Push', focus: 'Push B: chest, shoulders, triceps', moves: PUSH_B },
+  { title: 'Pull', focus: 'Pull B: back, rear shoulders, biceps', moves: PULL_B },
+  { title: 'Legs', focus: 'Legs B: hamstrings, glutes, calves, core', moves: LEGS_B },
 ];
 const SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -133,7 +134,7 @@ export function buildWorkoutPlan(p: CalorieProfile): WorkoutPlan {
       short: SHORT[weekday],
       title: d.title,
       focus: d.focus,
-      exercises: d.moves.map((m) => ({ name: m.name, sets: m.fixed ?? (m.main ? style.main : style.accessory), note: m.note })),
+      exercises: d.moves.map((m) => ({ name: m.name, sets: m.sets, note: m.note ?? 'To failure' })),
       cardio: { minutes, what: c.what, setting: c.setting, how: CARDIO_HOW[goal] },
     };
   });
@@ -145,7 +146,7 @@ export function buildWorkoutPlan(p: CalorieProfile): WorkoutPlan {
         ? `Built to gain ${poundsToGo} lb, from ${p.weightLb} to ${p.goalWeightLb} lb, mostly as muscle.`
         : `Built to stay at ${p.weightLb} lb and get stronger.`;
 
-  return { goal, poundsToGo, summary, repStyle: style.repStyle, rest: style.rest, cardioMinutes: minutes, days };
+  return { goal, poundsToGo, summary, repStyle: 'Every set to failure', rest: style.rest, cardioMinutes: minutes, days };
 }
 
 /** How many sets a prescription like "3 × 12–15" asks for. */
