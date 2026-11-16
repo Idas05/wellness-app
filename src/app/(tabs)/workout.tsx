@@ -299,6 +299,13 @@ function ExerciseRow({
               </Pressable>
             ) : null}
             <Pressable
+              onPress={() => router.push({ pathname: '/check-form', params: { exercise: exercise.name } })}
+              accessibilityLabel={`Check form for ${exercise.name}`}
+              style={[styles.smallBtn, styles.formBtn]}
+            >
+              <Text style={[styles.smallBtnText, { color: '#2B6CB0' }]}>Check Form</Text>
+            </Pressable>
+            <Pressable
               onPress={() => onLock(rows)}
               disabled={doneCount === 0}
               accessibilityLabel={`Set ${exercise.name} in stone`}
@@ -364,6 +371,7 @@ const styles = StyleSheet.create({
   },
   logActions: { flexDirection: 'row', gap: 8, marginTop: 4, flexWrap: 'wrap' },
   smallBtn: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line },
+  formBtn: { borderColor: '#2B6CB0' },
   doneBtn: { backgroundColor: colors.ink, borderColor: colors.ink, marginLeft: 'auto' },
   smallBtnText: { fontSize: 14, fontWeight: '700', color: colors.ink },
   exName: { fontSize: 16, fontWeight: '600', color: colors.ink },
