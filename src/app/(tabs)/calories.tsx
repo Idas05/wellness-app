@@ -76,9 +76,6 @@ export default function CaloriesScreen() {
           key={m.id}
           meal={m}
           foods={foods.filter((f) => mealOf(f) === m.id)}
-          onAdd={(name, calories) =>
-            updateFoods([...foods, { id: newId(), name, calories, at: new Date().toISOString(), meal: m.id }])
-          }
           onRemove={(id) => updateFoods(foods.filter((x) => x.id !== id))}
           onScan={() => setScanMeal(m.id)}
         />
@@ -149,31 +146,16 @@ function CalorieBar({ eaten, goal }: { eaten: number; goal: number }) {
 function MealSection({
   meal,
   foods,
-  onAdd,
   onRemove,
   onScan,
 }: {
   meal: (typeof MEALS)[number];
   foods: FoodEntry[];
-  onAdd: (name: string, calories: number) => void;
   onRemove: (id: string) => void;
   onScan: () => void;
 }) {
-  const [adding, setAdding] = useState(false);
-  const [name, setName] = useState('');
-  const [cal, setCal] = useState('');
-  const calories = parseInt(cal, 10);
-  const ok = name.trim().length > 0 && calories > 0 && calories < 10000;
   const total = foods.reduce((s, f) => s + f.calories, 0);
   const noun = meal.id === 'snack' ? 'snack' : meal.label.toLowerCase();
-
-  const add = () => {
-    if (!ok) return;
-    onAdd(name.trim(), calories);
-    setName('');
-    setCal('');
-    setAdding(false);
-  };
 
   return (
     <View style={card.box}>
@@ -197,46 +179,14 @@ function MealSection({
         </View>
       ))}
 
-      {adding ? (
-        <View style={{ marginTop: 12 }}>
-          <View style={styles.addRow}>
-            <TextInput
-              value={name}
-              onChangeText={setName}
-              placeholder="What did you eat?"
-              placeholderTextColor="#9A948C"
-              style={[styles.input, { flex: 1 }]}
-              autoFocus
-            />
-            <TextInput
-              value={cal}
-              onChangeText={(t) => setCal(t.replace(/[^0-9]/g, ''))}
-              placeholder="Cal"
-              placeholderTextColor="#9A948C"
-              keyboardType="number-pad"
-              style={[styles.input, { width: 80 }]}
-              onSubmitEditing={add}
-            />
-          </View>
-          <View style={[styles.addRow, { marginTop: 10 }]}>
-            <Pressable onPress={() => setAdding(false)} style={[styles.lightButton, { flex: 1 }]}>
-              <Text style={styles.lightText}>Cancel</Text>
-            </Pressable>
-            <Pressable onPress={add} disabled={!ok} style={[styles.darkButton, { flex: 1 }, !ok && { opacity: 0.4 }]}>
-              <Text style={styles.buttonText}>Add</Text>
-            </Pressable>
-          </View>
-        </View>
-      ) : (
-        <View style={[styles.addRow, { marginTop: foods.length ? 12 : 4 }]}>
-          <Pressable onPress={() => setAdding(true)} style={[styles.lightButton, { flex: 1 }]}>
-            <Text style={styles.lightText}>+ Add {noun}</Text>
-          </Pressable>
-          <Pressable onPress={onScan} style={styles.lightButton} accessibilityLabel={`Scan a barcode for ${noun}`}>
-            <Text style={styles.lightText}>📷 Scan</Text>
-          </Pressable>
-        </View>
-      )}
+      <View style={[styles.addRow, { marginTop: foods.length ? 12 : 4 }]}>
+        <Pressable onPress={() => router.push({ pathname: '/add-food', params: { meal: meal.id } })} style={[styles.lightButton, { flex: 1 }]} accessibilityRole="button">
+          <Text style={styles.lightText}>+ Add {noun}</Text>
+        </Pressable>
+        <Pressable onPress={onScan} style={styles.lightButton} accessibilityLabel={`Scan a barcode for ${noun}`}>
+          <Text style={styles.lightText}>📷 Scan</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
