@@ -10,6 +10,7 @@ const TABS: Record<string, { label: string; icon: IconName; iconActive: IconName
   sleep: { label: 'Sleep', icon: 'moon-outline', iconActive: 'moon' },
   calories: { label: 'Cal Counter', icon: 'restaurant-outline', iconActive: 'restaurant' },
   workout: { label: 'Workout', icon: 'barbell-outline', iconActive: 'barbell' },
+  'meal-prep': { label: 'Meal Prep', icon: 'nutrition-outline', iconActive: 'nutrition' },
 };
 
 function PillTabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
@@ -54,6 +55,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="sleep" options={{ title: 'Sleep' }} />
       <Tabs.Screen name="calories" options={{ title: 'Cal Counter' }} />
       <Tabs.Screen name="workout" options={{ title: 'Workout' }} />
+      <Tabs.Screen name="meal-prep" options={{ title: 'Meal Prep' }} />
     </Tabs>
   );
 }
@@ -66,7 +68,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     padding: 6,
     width: '100%',
-    maxWidth: 380,
+    maxWidth: 440,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 16,
@@ -75,6 +77,6 @@ const styles = StyleSheet.create({
   },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 999, gap: 2 },
   itemActive: { backgroundColor: 'rgba(255,255,255,0.16)' },
-  label: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '600' },
+  label: { color: 'rgba(255,255,255,0.7)', fontSize: 10.5, fontWeight: '600' },
   labelActive: { color: '#fff' },
 });
