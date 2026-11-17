@@ -9,7 +9,7 @@ import {
   matchRecipes,
   mealBudget,
   mealNow,
-  portionText,
+  scaleIngredient,
   savePrefs,
   shuffle,
   type AllergenId,
@@ -77,7 +77,7 @@ export default function MealPrepScreen() {
   const logIt = async (s: Suggestion) => {
     const day = todayKey();
     const current = await loadDay(day);
-    const entry: FoodEntry = { id: newId(), name: `${s.recipe.name} · ${portionText(s.portion)}`, calories: s.calories, at: new Date().toISOString(), meal };
+    const entry: FoodEntry = { id: newId(), name: `${s.recipe.name} · 1 serving`, calories: s.calories, at: new Date().toISOString(), meal };
     // The log updates, but the suggestions stay put until you come back, so the ✓ doesn't vanish.
     await saveDay(day, [...current, entry]);
     setLogged(s.recipe.id);
@@ -173,20 +173,17 @@ function RecipeCard({ s, certified, mealLabel, logged, onLog }: { s: Suggestion;
       <Text style={styles.meta}>
         {s.calories.toLocaleString()} cal · {Math.round(r.protein * s.portion)} g protein · {r.mins} min
       </Text>
-      <Text style={styles.portion}>
-        {s.portion === 1 ? 'Eat 1 serving' : `Eat ${portionText(s.portion)}`} ({r.cal} cal each)
-      </Text>
+      <Text style={styles.portion}>Makes 1 serving, sized to your target</Text>
       {certified && r.meats.some((m) => m !== 'fish' && m !== 'shellfish') ? <Text style={styles.portion}>Use {certified}-certified {r.meats[0]}.</Text> : null}
 
       {open ? (
         <View style={{ marginTop: 10 }}>
-          <Text style={styles.sub}>Ingredients for 1 serving</Text>
+          <Text style={styles.sub}>Ingredients</Text>
           {r.ingredients.map((x) => (
             <Text key={x} style={styles.li}>
-              • {x}
+              • {scaleIngredient(x, s.portion)}
             </Text>
           ))}
-          {s.portion !== 1 ? <Text style={[styles.muted, { marginTop: 4 }]}>Multiply by {s.portion} for your portion.</Text> : null}
           <Text style={[styles.sub, { marginTop: 10 }]}>Steps</Text>
           {r.steps.map((x, i) => (
             <Text key={i} style={styles.li}>
