@@ -119,8 +119,41 @@ export function shuffle<T>(xs: T[]): T[] {
   return a;
 }
 
-export function portionText(n: number): string {
-  const whole = Math.floor(n);
-  const frac = ({ 0.25: '¼', 0.5: '½', 0.75: '¾' } as Record<number, string>)[n - whole] ?? '';
-  return `${whole || ''}${frac} serving${n > 1 ? 's' : ''}`;
+// ---- Rewriting a recipe so your portion is one serving ----
+
+const FRACTIONS: Record<string, number> = { '¼': 0.25, '⅓': 1 / 3, '½': 0.5, '⅔': 2 / 3, '¾': 0.75 };
+const NICE: [number, string][] = [[0, ''], [0.25, '¼'], [1 / 3, '⅓'], [0.5, '½'], [2 / 3, '⅔'], [0.75, '¾'], [1, '']];
+
+/** 1.5 → "1½", 0.333 → "⅓": the nearest amount you'd actually measure. */
+export function niceAmount(n: number, wholeOnly = false): string {
+  if (wholeOnly) return String(Math.max(1, Math.round(n)));
+  let whole = Math.floor(n);
+  const [frac, sym] = NICE.reduce((best, c) => (Math.abs(n - whole - c[0]) < Math.abs(n - whole - best[0]) ? c : best));
+  if (frac === 1) whole += 1;
+  if (!whole && !sym) return '¼';
+  return `${whole || ''}${sym}`;
+}
+
+const AMOUNT = /(\d+(?:\.\d+)?)?([¼⅓½⅔¾])?(?=\s)/g;
+const SINGULAR: Record<string, string> = { cups: 'cup', slices: 'slice', eggs: 'egg', spears: 'spear', cloves: 'clove', leaves: 'leaf' };
+const PLURAL = Object.fromEntries(Object.entries(SINGULAR).map(([p, s]) => [s, p]));
+
+/** Multiplies every amount in an ingredient line, e.g. "2 tbsp salsa" × 1.5 → "3 tbsp salsa". Eggs stay whole. */
+export function scaleIngredient(line: string, factor: number): string {
+  if (factor === 1) return line;
+  return line.replace(AMOUNT, (m, num: string | undefined, frac: string | undefined, offset: number) => {
+    if (!num && !frac) return m;
+    // Leave things like "93% lean" alone.
+    if (line[offset + m.length] === '%') return m;
+    const value = (num ? parseFloat(num) : 0) + (frac ? FRACTIONS[frac] : 0);
+    const next = line.slice(offset + m.length).trim().split(/[\s,(]/)[0].toLowerCase();
+    const isEgg = next === 'egg' || next === 'eggs' || /^hard-boiled egg/.test(line.slice(offset + m.length).trim());
+    return niceAmount(value * factor, isEgg);
+  }).replace(/(^|[+,]\s*)([\d¼⅓½⅔¾]+)\s+(hard-boiled\s+)?(\w+)/g, (all, pre: string, amt: string, adj: string | undefined, word: string) => {
+    // Keep "1 cup" / "2 cups" and "1 egg" / "2 eggs" reading right after scaling.
+    const many = /^\d/.test(amt) && amt !== '1';
+    const lower = word.toLowerCase();
+    const fixed = many ? PLURAL[lower] : SINGULAR[lower];
+    return fixed ? `${pre}${amt} ${adj ?? ''}${fixed}` : all;
+  });
 }
