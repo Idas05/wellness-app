@@ -86,7 +86,7 @@ export function AppleWatchSetup() {
   );
 }
 
-function CopyRow({
+export function CopyRow({
   label,
   value,
   copied,
