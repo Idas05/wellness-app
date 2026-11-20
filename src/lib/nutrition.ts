@@ -39,6 +39,10 @@ export type FoodEntry = {
   id: string;
   name: string;
   calories: number;
+  /** Grams, when known. */
+  protein?: number;
+  fat?: number;
+  carbs?: number;
   at: string;
   meal?: MealId;
   /** Set once the entry is saved to your account, so a later sync can tell "deleted elsewhere" from "not uploaded yet". */
@@ -153,12 +157,67 @@ function reportSyncError(e: unknown) {
   const msg = String((e as { message?: string })?.message ?? e);
   foodSyncError = /food_entries|calorie_profiles|schema cache/.test(msg) ? 'Syncing food needs a one-time setup: run supabase/food-sync.sql in Supabase.' : `Couldn't sync food: ${msg}`;
 }
-function clearSyncError() {
-  foodSyncError = null;
+
+type FoodRow = { id: string; day: string; name: string; calories: number; at: string; meal: string | null; protein?: number | null; fat?: number | null; carbs?: number | null };
+const toRow = (date: string, f: FoodEntry) => ({
+  id: f.id,
+  day: date,
+  name: f.name,
+  calories: f.calories,
+  at: f.at,
+  meal: f.meal ?? null,
+  updated_at: new Date().toISOString(),
+  ...(macroColumns ? { protein: f.protein ?? null, fat: f.fat ?? null, carbs: f.carbs ?? null } : {}),
+});
+const fromRow = (r: FoodRow): FoodEntry => ({
+  id: r.id,
+  name: r.name,
+  calories: r.calories,
+  at: r.at,
+  meal: (r.meal ?? undefined) as MealId | undefined,
+  synced: true,
+  ...(r.protein != null ? { protein: Number(r.protein) } : {}),
+  ...(r.fat != null ? { fat: Number(r.fat) } : {}),
+  ...(r.carbs != null ? { carbs: Number(r.carbs) } : {}),
+});
+
+// Until supabase/macros.sql has been run, the account has no protein/fat/carbs columns. Calories still sync,
+// macros stay on the device, and Cal Counter says how to finish setup.
+let macroColumns = true;
+const MACRO_SETUP = 'Protein, fat and carbs need a one-time setup to sync: run supabase/macros.sql in Supabase.';
+const missingMacroColumn = (e: { message?: string } | null) => !!e && /protein|fat|carbs/.test(e.message ?? '');
+
+async function selectDay(date: string) {
+  if (macroColumns) {
+    const r = await supabase!.from('food_entries').select('id, day, name, calories, at, meal, protein, fat, carbs').eq('day', date);
+    if (!missingMacroColumn(r.error)) return r;
+    macroColumns = false;
+  }
+  return supabase!.from('food_entries').select('id, day, name, calories, at, meal').eq('day', date);
 }
 
-type FoodRow = { id: string; day: string; name: string; calories: number; at: string; meal: string | null };
-const toRow = (date: string, f: FoodEntry) => ({ id: f.id, day: date, name: f.name, calories: f.calories, at: f.at, meal: f.meal ?? null, updated_at: new Date().toISOString() });
+async function upsertRows(date: string, entries: FoodEntry[]) {
+  let r = await supabase!.from('food_entries').upsert(entries.map((f) => toRow(date, f)));
+  if (macroColumns && missingMacroColumn(r.error)) {
+    macroColumns = false;
+    r = await supabase!.from('food_entries').upsert(entries.map((f) => toRow(date, f)));
+  }
+  return r;
+}
+
+/** Keeps macros this device knows about when the account can't store them yet. */
+function keepLocalMacros(remote: FoodEntry[], local: FoodEntry[]): FoodEntry[] {
+  if (macroColumns) return remote;
+  const byId = new Map(local.map((f) => [f.id, f]));
+  return remote.map((r) => {
+    const l = byId.get(r.id);
+    return l ? { ...r, protein: l.protein, fat: l.fat, carbs: l.carbs } : r;
+  });
+}
+
+function clearSyncError() {
+  foodSyncError = macroColumns ? null : MACRO_SETUP;
+}
 
 /** Local date like 2026-11-06, so "today" follows your own clock. */
 export function todayKey(d = new Date()): string {
@@ -196,13 +255,13 @@ export async function loadDay(date: string): Promise<FoodEntry[]> {
   const local = await loadLocalDay(date);
   if (!(await signedIn())) return local;
   try {
-    const { data, error } = await supabase!.from('food_entries').select('id, day, name, calories, at, meal').eq('day', date);
+    const { data, error } = await selectDay(date);
     if (error) throw error;
-    const remote = (data as FoodRow[]).map<FoodEntry>((r) => ({ id: r.id, name: r.name, calories: r.calories, at: r.at, meal: (r.meal ?? undefined) as MealId | undefined, synced: true }));
+    const remote = keepLocalMacros((data as FoodRow[]).map(fromRow), local);
     const remoteIds = new Set(remote.map((r) => r.id));
     const unsent = local.filter((f) => !f.synced && !remoteIds.has(f.id));
     if (unsent.length) {
-      const up = await supabase!.from('food_entries').upsert(unsent.map((f) => toRow(date, f)));
+      const up = await upsertRows(date, unsent);
       if (up.error) throw up.error;
     }
     const merged = [...remote, ...unsent.map((f) => ({ ...f, synced: true }))].sort((a, b) => a.at.localeCompare(b.at));
@@ -228,7 +287,7 @@ export async function saveDay(date: string, entries: FoodEntry[]): Promise<void>
       if (del.error) throw del.error;
     }
     if (entries.length) {
-      const up = await supabase!.from('food_entries').upsert(entries.map((f) => toRow(date, f)));
+      const up = await upsertRows(date, entries);
       if (up.error) throw up.error;
     }
     await saveLocalDay(date, entries.map((f) => ({ ...f, synced: true })));

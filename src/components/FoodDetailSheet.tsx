@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { amountText, displayName, type FoodItem, type Serving } from '../lib/foods';
+import { scaleMacros, type Macros } from '../lib/macros';
+import { MacroLine } from './MacroLine';
 import { colors } from './Screen';
 
-export type PickedFood = { food: FoodItem; serving: Serving; qty: number; calories: number; amount: string };
+export type PickedFood = { food: FoodItem; serving: Serving; qty: number; calories: number; amount: string; macros?: Macros };
 
 /** Pick a serving size and how many, see the calories, then add. */
 export function FoodDetailSheet({
@@ -29,6 +31,7 @@ export function FoodDetailSheet({
   const serving = food.servings[servingIdx] ?? food.servings[0];
   const qty = parseFloat(qtyText) || 0;
   const calories = Math.round(serving.cal * qty);
+  const macros = serving.m && scaleMacros(serving.m, qty);
 
   const pickServing = (i: number) => {
     const next = food.servings[i];
@@ -54,6 +57,7 @@ export function FoodDetailSheet({
             <Text style={styles.calBig}>{calories.toLocaleString()}</Text>
             <Text style={styles.calUnit}>calories</Text>
           </View>
+          {macros ? <MacroLine macros={macros} style={{ marginBottom: 6 }} /> : null}
 
           <Text style={styles.label}>Serving size</Text>
           <ScrollView style={{ maxHeight: 190 }} contentContainerStyle={{ gap: 8 }}>
@@ -87,7 +91,7 @@ export function FoodDetailSheet({
           </View>
 
           <Pressable
-            onPress={() => onConfirm({ food, serving, qty, calories, amount: amountText(serving, qty) })}
+            onPress={() => onConfirm({ food, serving, qty, calories, amount: amountText(serving, qty), macros })}
             disabled={qty <= 0}
             style={[styles.button, qty <= 0 && { opacity: 0.4 }]}
             accessibilityLabel={`${actionLabel}: ${displayName(food)}`}

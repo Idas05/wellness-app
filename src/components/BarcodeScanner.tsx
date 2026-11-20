@@ -12,12 +12,14 @@ import {
   View,
 } from 'react-native';
 import { lookupBarcode, type ScannedFood } from '../lib/foodLookup';
+import { scaleMacros, type Macros } from '../lib/macros';
+import { MacroLine } from './MacroLine';
 import { colors } from './Screen';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
-  onAdd: (name: string, calories: number) => void;
+  onAdd: (name: string, calories: number, macros?: Macros) => void;
 };
 
 type State =
@@ -171,7 +173,7 @@ function FoundFood({
   onAgain,
 }: {
   food: ScannedFood;
-  onAdd: (name: string, calories: number) => void;
+  onAdd: (name: string, calories: number, macros?: Macros) => void;
   onAgain: () => void;
 }) {
   const byServing = food.perServing !== null;
@@ -179,6 +181,7 @@ function FoundFood({
   const [grams, setGrams] = useState('100');
   const g = parseFloat(grams) || 0;
   const calories = byServing ? Math.round(food.perServing! * servings) : Math.round(((food.per100g ?? 0) * g) / 100);
+  const macros = byServing ? food.macrosPerServing && scaleMacros(food.macrosPerServing, servings) : food.macros100g && scaleMacros(food.macros100g, g / 100);
 
   return (
     <View>
@@ -211,7 +214,8 @@ function FoundFood({
         </View>
       )}
 
-      <Pressable onPress={() => onAdd(food.name, calories)} disabled={calories <= 0} style={[styles.button, calories <= 0 && { opacity: 0.4 }]}>
+      {macros ? <MacroLine macros={macros} style={{ marginTop: 12 }} /> : null}
+      <Pressable onPress={() => onAdd(food.name, calories, macros)} disabled={calories <= 0} style={[styles.button, calories <= 0 && { opacity: 0.4 }]}>
         <Text style={styles.buttonText}>Add {calories} cal</Text>
       </Pressable>
       <Pressable onPress={onAgain} style={styles.secondary}>

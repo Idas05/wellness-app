@@ -98,7 +98,7 @@ export default function MealPrepScreen() {
   const logIt = async (s: Suggestion) => {
     const day = todayKey();
     const current = await loadDay(day);
-    const entry: FoodEntry = { id: newId(), name: `${s.recipe.name} · 1 serving`, calories: s.calories, at: new Date().toISOString(), meal };
+    const entry: FoodEntry = { id: newId(), name: `${s.recipe.name} · 1 serving`, calories: s.calories, protein: Math.round(s.recipe.protein * s.portion), at: new Date().toISOString(), meal };
     // The log updates, but the suggestions stay put until you come back, so the ✓ doesn't vanish.
     await saveDay(day, [...current, entry]);
     setLogged(s.recipe.id);

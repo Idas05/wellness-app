@@ -1,9 +1,11 @@
 // Foods you can search, and the serving sizes you can pick from.
 import { syncedLoad, syncedSave } from './cloudKv';
+import { scaleMacros, type Macros } from './macros';
 // Common foods are built in (calories per 100 g from USDA FoodData Central, rounded),
 // so they show up instantly and work offline. Branded foods come from Open Food Facts.
 
-export type Serving = { label: string; cal: number };
+/** m: protein, fat and carbs in this serving, when known. */
+export type Serving = { label: string; cal: number; m?: Macros };
 export type FoodItem = {
   id: string;
   name: string;
@@ -177,18 +179,63 @@ const COMMON: Row[] = [
   ['Red wine', 85, [['1 glass (5 fl oz)', 147]]],
 ];
 
+/** Protein, fat and carbs in grams per 100 g (USDA FoodData Central, rounded). */
+const MACROS: Record<string, [number, number, number]> = {
+  Apple: [0.3, 0.2, 14], Banana: [1.1, 0.3, 23], Orange: [0.9, 0.1, 12], Strawberries: [0.7, 0.3, 7.7], Blueberries: [0.7, 0.3, 14.5],
+  Raspberries: [1.2, 0.7, 12], Grapes: [0.7, 0.2, 18], Watermelon: [0.6, 0.2, 7.6], Pineapple: [0.5, 0.1, 13], Mango: [0.8, 0.4, 15],
+  Avocado: [2, 14.7, 8.5], Pear: [0.4, 0.1, 15], Peach: [0.9, 0.3, 9.5], Cherries: [1.1, 0.2, 16], Kiwi: [1.1, 0.5, 15],
+  Grapefruit: [0.8, 0.1, 10.7], 'Medjool dates': [1.8, 0.2, 75], Raisins: [3.1, 0.5, 79],
+  Broccoli: [2.8, 0.4, 6.6], 'Spinach, raw': [2.9, 0.4, 3.6], Carrot: [0.9, 0.2, 9.6], Tomato: [0.9, 0.2, 3.9], Cucumber: [0.7, 0.1, 3.6],
+  'Romaine lettuce': [1.2, 0.3, 3.3], 'Mixed salad greens': [1.5, 0.2, 3.6], 'Bell pepper': [1, 0.3, 6], Onion: [1.1, 0.1, 9.3],
+  'Baked potato': [2.5, 0.1, 21], 'Sweet potato, baked': [2, 0.2, 21], Corn: [3.4, 1.5, 21], 'Green beans': [1.8, 0.2, 7], Peas: [5.4, 0.4, 14.5],
+  Mushrooms: [3.1, 0.3, 3.3], Cauliflower: [1.9, 0.3, 5], Asparagus: [2.2, 0.1, 3.9], Zucchini: [1.2, 0.3, 3.1], Kale: [4.3, 0.9, 8.8],
+  'Brussels sprouts': [3.4, 0.3, 9], Celery: [0.7, 0.2, 3],
+  'Rice, white, cooked': [2.7, 0.3, 28], 'Rice, brown, cooked': [2.7, 1, 25.6], 'Pasta, cooked': [5.8, 0.9, 31], 'Oatmeal, cooked': [2.5, 1.5, 12],
+  'Rolled oats, dry': [13, 6.5, 68], 'Quinoa, cooked': [4.4, 1.9, 21], 'Couscous, cooked': [3.8, 0.2, 23], 'White bread': [9, 3.2, 49],
+  'Whole wheat bread': [12.5, 3.5, 43], Bagel: [10, 1.5, 49], 'Flour tortilla': [8.3, 8, 52], 'Corn tortilla': [5.7, 2.9, 45],
+  'English muffin': [8.9, 1.7, 44], Pancake: [6.4, 9.7, 28], 'Waffle, frozen': [6.6, 9.5, 41], Croissant: [8.2, 21, 46], Granola: [11, 20, 64],
+  Cheerios: [12, 6.7, 73], 'Corn flakes': [7, 0.4, 84], 'Popcorn, air-popped': [13, 4.5, 78],
+  'Chicken breast, cooked': [31, 3.6, 0], 'Chicken thigh, cooked': [26, 10.9, 0], 'Rotisserie chicken': [27, 8.5, 0],
+  'Ground beef 85% lean, cooked': [26, 15, 0], 'Sirloin steak, cooked': [30, 8.6, 0], 'Salmon, cooked': [22, 12, 0],
+  'Tuna, canned in water': [26, 0.8, 0], 'Shrimp, cooked': [24, 0.3, 0.2], 'Tilapia, cooked': [26, 2.7, 0], 'Deli turkey': [17, 2, 4],
+  Ham: [17, 6, 3], 'Bacon, cooked': [37, 42, 1.4], 'Pork chop, cooked': [27, 13, 0], 'Sausage link': [13, 29, 1.5], 'Hot dog': [10, 26, 4],
+  Egg: [12.6, 9.5, 0.7], 'Egg white': [10.9, 0.2, 0.7], 'Firm tofu': [17, 9, 3], 'Black beans, cooked': [8.9, 0.5, 24],
+  'Chickpeas, cooked': [8.9, 2.6, 27], 'Lentils, cooked': [9, 0.4, 20], Hummus: [8, 9.6, 14], 'Whey protein powder': [80, 6, 8],
+  'Whole milk': [3.2, 3.3, 4.8], '2% milk': [3.3, 2, 4.8], 'Skim milk': [3.4, 0.1, 5], 'Almond milk, unsweetened': [0.6, 1.1, 0.3],
+  'Greek yogurt, plain nonfat': [10.3, 0.4, 3.6], 'Fruit yogurt, low-fat': [4, 1.2, 18], 'Cheddar cheese': [23, 33, 1.3], Mozzarella: [22, 17, 2.2],
+  'American cheese': [16, 26, 8], 'String cheese': [24, 20, 2.5], 'Parmesan, grated': [29, 28, 14], 'Cottage cheese 2%': [11, 2.3, 4.3],
+  Butter: [0.9, 81, 0.1], 'Cream cheese': [6, 34, 4], 'Vanilla ice cream': [3.5, 11, 24],
+  'Peanut butter': [25, 50, 20], Almonds: [21, 50, 22], Walnuts: [15, 65, 14], Cashews: [18, 44, 30], Peanuts: [26, 49, 16],
+  'Chia seeds': [17, 31, 42], 'Olive oil': [0, 100, 0], Mayonnaise: [1, 75, 0.6], 'Ranch dressing': [1, 45, 6], Ketchup: [1, 0.1, 27],
+  Honey: [0.3, 0, 82], 'Maple syrup': [0, 0.1, 67], Jam: [0.4, 0.1, 65], Sugar: [0, 0, 100],
+  'Cheese pizza': [11, 10, 33], 'Pepperoni pizza': [12, 13, 34], Hamburger: [12.4, 10, 28], Cheeseburger: [13, 12, 26], 'French fries': [3.4, 15, 41],
+  'Chicken nuggets': [15, 18, 17], 'Beef taco': [9, 12, 20], 'Bean and cheese burrito': [7.5, 6, 27], 'Spaghetti with meat sauce': [6.5, 4, 17],
+  'Mac and cheese': [6.5, 7, 19], 'Fried rice': [5, 6, 21], 'California roll': [3, 3.5, 20], 'Peanut butter and jelly sandwich': [11, 15, 45],
+  'Grilled cheese sandwich': [12, 20, 35], 'Chicken noodle soup': [1.6, 0.8, 3],
+  'Potato chips': [7, 35, 53], 'Tortilla chips': [7, 23, 64], Pretzels: [10, 3, 80], 'Dark chocolate': [7.8, 43, 46], 'Milk chocolate bar': [7.6, 30, 59],
+  'Chocolate chip cookie': [5, 24, 64], Brownie: [6, 23, 62], 'Glazed donut': [5, 23, 49], 'Blueberry muffin': [5.5, 17, 51], 'Granola bar': [8, 17, 64],
+  'Protein bar': [30, 10, 35], 'Rice cake': [8, 3, 82], 'Trail mix': [14, 29, 45], 'Beef jerky': [33, 26, 11],
+  'Coffee, black': [0.1, 0, 0], 'Latte, whole milk': [2.9, 2.9, 4.4], 'Orange juice': [0.7, 0.2, 10.4], 'Apple juice': [0.1, 0.1, 11.3], Cola: [0, 0, 10.6],
+  'Diet soda': [0, 0, 0], 'Sports drink': [0, 0, 6.4], 'Energy drink': [0.5, 0, 11], 'Protein shake, ready to drink': [9, 1.3, 2], Beer: [0.5, 0, 3.6],
+  'Red wine': [0.1, 0, 2.6],
+};
+
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-export const COMMON_FOODS: FoodItem[] = COMMON.map(([name, per100, servings]) => ({
-  id: `common-${slug(name)}`,
-  name,
-  source: 'common',
-  servings: [
-    ...servings.map(([label, g]) => ({ label: `${label} (${Math.round(g)} g)`, cal: Math.round((per100 * g) / 100) })),
-    { label: '100 g', cal: per100 },
-    { label: '1 g', cal: per100 / 100 },
-  ],
-}));
+export const COMMON_FOODS: FoodItem[] = COMMON.map(([name, per100, servings]) => {
+  const [protein, fat, carbs] = MACROS[name] ?? [0, 0, 0];
+  const m100: Macros = { protein, fat, carbs };
+  return {
+    id: `common-${slug(name)}`,
+    name,
+    source: 'common',
+    servings: [
+      ...servings.map(([label, g]) => ({ label: `${label} (${Math.round(g)} g)`, cal: Math.round((per100 * g) / 100), m: scaleMacros(m100, g / 100) })),
+      { label: '100 g', cal: per100, m: m100 },
+      { label: '1 g', cal: per100 / 100, m: scaleMacros(m100, 0.01) },
+    ],
+  };
+});
 
 const norm = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9% ]+/g, ' ').trim();
 
@@ -233,6 +280,16 @@ const num = (v: unknown): number | null => {
   return Number.isFinite(n) && n >= 0 ? n : null;
 };
 
+/** Protein, fat and carbs from Open Food Facts, per 100 g and per serving (left out when the label doesn't list them). */
+export function offMacros(n: Record<string, number | string | undefined>, servingGrams: number | null): { m100?: Macros; mServing?: Macros } {
+  const get = (k: string) => ({ protein: num(n[`proteins_${k}`]), fat: num(n[`fat_${k}`]), carbs: num(n[`carbohydrates_${k}`]) });
+  const full = (x: { protein: number | null; fat: number | null; carbs: number | null }): Macros | undefined =>
+    x.protein === null && x.fat === null && x.carbs === null ? undefined : { protein: x.protein ?? 0, fat: x.fat ?? 0, carbs: x.carbs ?? 0 };
+  const m100 = full(get('100g'));
+  const mServing = full(get('serving')) ?? (m100 && servingGrams ? scaleMacros(m100, servingGrams / 100) : undefined);
+  return { m100, mServing };
+}
+
 export function fromOff(p: OffProduct): FoodItem | null {
   const n = p.nutriments ?? {};
   const per100 = num(n['energy-kcal_100g']) ?? (num(n['energy_100g']) !== null ? num(n['energy_100g'])! / 4.184 : null);
@@ -240,9 +297,10 @@ export function fromOff(p: OffProduct): FoodItem | null {
   const perServing = num(n['energy-kcal_serving']) ?? (per100 !== null && qty ? (per100 * qty) / 100 : null);
   const name = p.product_name?.trim();
   if (!name || (per100 === null && perServing === null)) return null;
+  const { m100, mServing } = offMacros(n, qty);
   const servings: Serving[] = [];
-  if (perServing !== null) servings.push({ label: p.serving_size?.trim() || '1 serving', cal: Math.round(perServing) });
-  if (per100 !== null) servings.push({ label: '100 g', cal: Math.round(per100) }, { label: '1 g', cal: per100 / 100 });
+  if (perServing !== null) servings.push({ label: p.serving_size?.trim() || '1 serving', cal: Math.round(perServing), m: mServing });
+  if (per100 !== null) servings.push({ label: '100 g', cal: Math.round(per100), m: m100 }, { label: '1 g', cal: per100 / 100, m: m100 && scaleMacros(m100, 0.01) });
   const brand = p.brands?.split(',')[0]?.trim() || undefined;
   return { id: `off-${p.code || slug(name)}`, name, brand, servings, source: 'online' };
 }

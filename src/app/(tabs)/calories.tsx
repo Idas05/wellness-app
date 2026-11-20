@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { BarcodeScanner } from '../../components/BarcodeScanner';
+import { MACRO_COLORS, MACRO_LABELS } from '../../components/MacroLine';
 import { card, colors, Screen } from '../../components/Screen';
 import {
   ACTIVITY_LEVELS,
@@ -21,6 +22,7 @@ import {
   type MealId,
   type Sex,
 } from '../../lib/nutrition';
+import { macroGoals, roundMacros, sumMacros, type Macros } from '../../lib/macros';
 import { newId } from '../../lib/reminders';
 import { useApp } from '../../lib/store';
 
@@ -68,6 +70,8 @@ export default function CaloriesScreen() {
 
   const plan = calculatePlan(profile);
   const eaten = foods.reduce((s, f) => s + f.calories, 0);
+  const macrosEaten = sumMacros(foods);
+  const macroGoal = macroGoals(plan, profile);
 
   const updateFoods = async (next: FoodEntry[]) => {
     setFoods(next);
@@ -76,7 +80,7 @@ export default function CaloriesScreen() {
   };
 
   return (
-    <Screen title="Cal Counter" subtitle="Today" pinned={<CalorieBar eaten={eaten} goal={plan.dailyCalories} />}>
+    <Screen title="Cal Counter" subtitle="Today" pinned={<CalorieBar eaten={eaten} goal={plan.dailyCalories} macros={macrosEaten} macroGoal={macroGoal} />}>
       {syncError ? (
         <View style={[card.box, { backgroundColor: '#2A1418' }]}>
           <Text style={{ color: '#FCA5A5', fontSize: 14, fontWeight: '600' }}>{syncError}</Text>
@@ -95,10 +99,10 @@ export default function CaloriesScreen() {
       <BarcodeScanner
         visible={scanMeal !== null}
         onClose={() => setScanMeal(null)}
-        onAdd={(name, calories) => {
+        onAdd={(name, calories, macros) => {
           const meal = scanMeal ?? 'snack';
           setScanMeal(null);
-          updateFoods([...foods, { id: newId(), name, calories, at: new Date().toISOString(), meal }]);
+          updateFoods([...foods, { id: newId(), name, calories, ...(macros ? roundMacros(macros) : {}), at: new Date().toISOString(), meal }]);
         }}
       />
 
@@ -130,7 +134,7 @@ export default function CaloriesScreen() {
   );
 }
 
-function CalorieBar({ eaten, goal }: { eaten: number; goal: number }) {
+function CalorieBar({ eaten, goal, macros, macroGoal }: { eaten: number; goal: number; macros: Macros; macroGoal: Macros }) {
   const pct = goal > 0 ? eaten / goal : 0;
   const over = eaten > goal;
   const left = goal - eaten;
@@ -149,6 +153,28 @@ function CalorieBar({ eaten, goal }: { eaten: number; goal: number }) {
         <View
           style={[styles.fill, { width: `${Math.min(pct, 1) * 100}%`, backgroundColor: over ? '#F29E6D' : '#3B82F6' }]}
         />
+      </View>
+      <View style={styles.macroRow}>
+        {(['protein', 'carbs', 'fat'] as const).map((k) => (
+          <MacroBar key={k} label={MACRO_LABELS[k]} color={MACRO_COLORS[k]} eaten={macros[k]} goal={macroGoal[k]} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/** A smaller counter for one macro: grams eaten out of the day's target. */
+function MacroBar({ label, color, eaten, goal }: { label: string; color: string; eaten: number; goal: number }) {
+  const pct = goal > 0 ? Math.min(eaten / goal, 1) : 0;
+  return (
+    <View style={styles.macro} accessibilityLabel={`${label}: ${Math.round(eaten)} of ${goal} grams`}>
+      <Text style={styles.macroLabel}>{label}</Text>
+      <Text style={styles.macroNum}>
+        {Math.round(eaten)}
+        <Text style={styles.macroOf}> / {goal} g</Text>
+      </Text>
+      <View style={styles.macroTrack}>
+        <View style={[styles.macroFill, { width: `${pct * 100}%`, backgroundColor: color }]} />
       </View>
     </View>
   );
@@ -181,6 +207,9 @@ function MealSection({
             <Text style={styles.foodName}>{f.name}</Text>
             <Text style={styles.muted}>
               {new Date(f.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+              {f.protein != null || f.carbs != null || f.fat != null
+                ? `  ·  ${Math.round(f.protein ?? 0)}P ${Math.round(f.carbs ?? 0)}C ${Math.round(f.fat ?? 0)}F`
+                : ''}
             </Text>
           </View>
           <Text style={styles.foodCal}>{f.calories} cal</Text>
@@ -384,6 +413,13 @@ const styles = StyleSheet.create({
   barLeft: { fontSize: 15, fontWeight: '700', color: '#34D399' },
   track: { height: 16, borderRadius: 8, backgroundColor: colors.line, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 8 },
+  macroRow: { flexDirection: 'row', gap: 12, marginTop: 14 },
+  macro: { flex: 1, minWidth: 0 },
+  macroLabel: { fontSize: 11, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  macroNum: { fontSize: 15, fontWeight: '800', color: colors.ink, marginTop: 2, marginBottom: 6 },
+  macroOf: { fontSize: 12, fontWeight: '600', color: colors.muted },
+  macroTrack: { height: 6, borderRadius: 3, backgroundColor: colors.line, overflow: 'hidden' },
+  macroFill: { height: '100%', borderRadius: 3 },
   foodRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
   foodName: { fontSize: 16, fontWeight: '600', color: colors.ink },
   foodCal: { fontSize: 15, fontWeight: '700', color: colors.ink },
