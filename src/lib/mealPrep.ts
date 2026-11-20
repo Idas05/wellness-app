@@ -134,6 +134,11 @@ export function niceAmount(n: number, wholeOnly = false): string {
   return `${whole || ''}${sym}`;
 }
 
+/** Grams the way you'd weigh them: whole grams up to 100, then the nearest 5. */
+export function roundGrams(g: number): number {
+  return g < 100 ? Math.max(1, Math.round(g)) : Math.round(g / 5) * 5;
+}
+
 const AMOUNT = /(\d+(?:\.\d+)?)?([¼⅓½⅔¾])?(?=\s)/g;
 const SINGULAR: Record<string, string> = { cups: 'cup', slices: 'slice', eggs: 'egg', spears: 'spear', cloves: 'clove', leaves: 'leaf' };
 const PLURAL = Object.fromEntries(Object.entries(SINGULAR).map(([p, s]) => [s, p]));
@@ -148,6 +153,7 @@ export function scaleIngredient(line: string, factor: number): string {
     const value = (num ? parseFloat(num) : 0) + (frac ? FRACTIONS[frac] : 0);
     const next = line.slice(offset + m.length).trim().split(/[\s,(]/)[0].toLowerCase();
     const isEgg = next === 'egg' || next === 'eggs' || /^hard-boiled egg/.test(line.slice(offset + m.length).trim());
+    if (next === 'g') return String(roundGrams(value * factor));
     return niceAmount(value * factor, isEgg);
   }).replace(/(^|[+,]\s*)([\d¼⅓½⅔¾]+)\s+(hard-boiled\s+)?(\w+)/g, (all, pre: string, amt: string, adj: string | undefined, word: string) => {
     // Keep "1 cup" / "2 cups" and "1 egg" / "2 eggs" reading right after scaling.
