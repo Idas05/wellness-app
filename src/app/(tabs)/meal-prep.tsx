@@ -11,6 +11,9 @@ import {
   mealNow,
   scaleIngredient,
   savePrefs,
+  freshFirst,
+  loadSeen,
+  markSeen,
   shuffle,
   type AllergenId,
   type DietId,
@@ -33,9 +36,11 @@ export default function MealPrepScreen() {
   const [order, setOrder] = useState<Suggestion[]>([]);
   const [page, setPage] = useState(0);
   const [logged, setLogged] = useState<string | null>(null);
+  const [visit, setVisit] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
+      setVisit((v) => v + 1);
       loadPrefs().then(setPrefs);
       loadProfile().then(setProfile);
       loadDay(todayKey()).then(setFoods);
@@ -51,15 +56,31 @@ export default function MealPrepScreen() {
 
   const matches = useMemo(() => (prefs ? matchRecipes(RECIPE_LIBRARY, meal, budget.target, prefs) : []), [prefs, meal, budget.target]);
 
-  // A fresh shuffle whenever what we're matching against changes.
+  // Every visit, and whenever what we're matching against changes: recipes you haven't seen yet come first.
   useEffect(() => {
-    setOrder(shuffle(matches));
-    setPage(0);
-    setLogged(null);
-  }, [matches]);
+    let live = true;
+    loadSeen().then((seen) => {
+      if (!live) return;
+      setOrder(freshFirst(matches, seen[meal]));
+      setPage(0);
+      setLogged(null);
+    });
+    return () => {
+      live = false;
+    };
+  }, [matches, visit]);
 
   const pages = Math.max(1, Math.ceil(order.length / PAGE));
   const shown = order.slice(page * PAGE, page * PAGE + PAGE);
+  const shownKey = shown.map((s) => s.recipe.id).join(',');
+
+  // Remember what's been shown, so next time (on this device or the other) brings new ones.
+  useEffect(() => {
+    const ids = shownKey ? shownKey.split(',') : [];
+    const matchIds = matches.map((m) => m.recipe.id);
+    // Skip the moment between switching meals and the new list arriving.
+    if (ids.length && ids.every((id) => matchIds.includes(id))) markSeen(meal, ids, matchIds);
+  }, [shownKey]);
 
   const refresh = () => {
     setLogged(null);
