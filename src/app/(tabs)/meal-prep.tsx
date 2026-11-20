@@ -1,7 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { EatOut } from '../../components/EatOut';
 import { card, colors, Screen } from '../../components/Screen';
+import { macroGoals, sumMacros } from '../../lib/macros';
+import type { RestaurantMeal } from '../../lib/restaurants';
 import {
   ALLERGENS,
   DIETS,
@@ -37,6 +40,7 @@ export default function MealPrepScreen() {
   const [page, setPage] = useState(0);
   const [logged, setLogged] = useState<string | null>(null);
   const [visit, setVisit] = useState(0);
+  const [mode, setMode] = useState<'home' | 'out'>('home');
 
   useFocusEffect(
     useCallback(() => {
@@ -104,6 +108,14 @@ export default function MealPrepScreen() {
     setLogged(s.recipe.id);
   };
 
+  const logOut = async (m: RestaurantMeal) => {
+    const day = todayKey();
+    const current = await loadDay(day);
+    const entry: FoodEntry = { id: newId(), name: `${m.place} ${m.name}`, calories: m.cal, protein: m.protein, carbs: m.carbs, fat: m.fat, at: new Date().toISOString(), meal };
+    await saveDay(day, [...current, entry]);
+    setFoods([...current, entry]);
+  };
+
   if (prefs === undefined) return <Screen title="Meal Prep">{null}</Screen>;
 
   if (prefs === null || editing) {
@@ -127,7 +139,15 @@ export default function MealPrepScreen() {
   const prefLabels = [...prefs.diets.map((d) => DIETS.find((x) => x.id === d)!.label), ...prefs.allergies.map((a) => `No ${ALLERGENS.find((x) => x.id === a)!.label.toLowerCase()}`)];
 
   return (
-    <Screen title="Meal Prep" subtitle="Recipes that fit your calories and diet">
+    <Screen title="Meal Prep" subtitle={mode === 'home' ? 'Recipes that fit your calories and diet' : 'Restaurant meals that fit your day'}>
+      <View style={styles.modes}>
+        {(['home', 'out'] as const).map((m) => (
+          <Pressable key={m} onPress={() => setMode(m)} style={[styles.mode, mode === m && styles.modeOn]} accessibilityRole="tab" accessibilityState={{ selected: mode === m }}>
+            <Text style={[styles.modeText, mode === m && { color: '#fff' }]}>{m === 'home' ? '🍳  Cook at home' : '🍔  Eat out'}</Text>
+          </Pressable>
+        ))}
+      </View>
+
       <View style={styles.meals}>
         {MEALS.map((m) => (
           <Pressable key={m.id} onPress={() => setMeal(m.id)} style={[styles.chip, meal === m.id && styles.chipOn]} accessibilityRole="radio" accessibilityState={{ selected: meal === m.id }}>
@@ -136,6 +156,17 @@ export default function MealPrepScreen() {
         ))}
       </View>
 
+      {mode === 'out' ? (
+        <EatOut
+          prefs={prefs}
+          calLeft={daily - eatenToday}
+          proteinLeft={profile ? macroGoals(calculatePlan(profile), profile).protein - sumMacros(foods).protein : null}
+          breakfast={meal === 'breakfast'}
+          mealLabel={mealLabel}
+          onLog={logOut}
+        />
+      ) : (
+        <>
       <View style={card.box}>
         <Text style={card.heading}>{mealLabel} target</Text>
         <Text style={styles.big}>{budget.target.toLocaleString()} cal</Text>
@@ -181,6 +212,8 @@ export default function MealPrepScreen() {
           </Text>
         </>
       ) : null}
+        </>
+      )}
     </Screen>
   );
 }
@@ -277,6 +310,10 @@ function PrefsForm({ initial, onDone, onCancel }: { initial: DietPrefs | null; o
 }
 
 const styles = StyleSheet.create({
+  modes: { flexDirection: 'row', backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.line, padding: 4, marginBottom: 12 },
+  mode: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
+  modeOn: { backgroundColor: colors.accent },
+  modeText: { fontSize: 15, fontWeight: '700', color: colors.muted },
   meals: { flexDirection: 'row', gap: 6, marginBottom: 14 },
   chip: { flex: 1, minWidth: 0, alignItems: 'center', paddingVertical: 9, borderRadius: 999, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card },
   chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
