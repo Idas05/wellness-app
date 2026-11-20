@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { syncedLoad, syncedSave } from './cloudKv';
 import type { MealId } from './nutrition';
 import type { LibraryRecipe } from './recipeLibrary';
 
@@ -34,16 +34,11 @@ export type DietPrefs = { diets: DietId[]; allergies: AllergenId[] };
 const PREFS_KEY = 'wellness.dietPrefs.v1';
 
 export async function loadPrefs(): Promise<DietPrefs | null> {
-  try {
-    const raw = await AsyncStorage.getItem(PREFS_KEY);
-    return raw ? (JSON.parse(raw) as DietPrefs) : null;
-  } catch {
-    return null;
-  }
+  return syncedLoad<DietPrefs | null>(PREFS_KEY, null, (local, remote) => remote ?? local);
 }
 
 export async function savePrefs(p: DietPrefs): Promise<void> {
-  await AsyncStorage.setItem(PREFS_KEY, JSON.stringify(p));
+  await syncedSave(PREFS_KEY, p);
 }
 
 // ---- Which meal, and how many calories it gets ----

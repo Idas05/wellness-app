@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { localLoad, syncedLoad, syncedSave } from './cloudKv';
 import type { CalorieProfile } from './nutrition';
 
 export type Goal = 'lose' | 'gain' | 'maintain';
@@ -155,20 +155,22 @@ export function setCount(sets: string): number {
   return Number.isFinite(n) && n > 0 ? n : 3;
 }
 
-// ---- Weight and reps log, kept on this device ----
+// ---- Weight and reps log (follows your account when signed in) ----
 
 export type LoggedSet = { weight: string; reps: string };
 /** date (YYYY-MM-DD) → exercise name → sets */
 type WorkoutLog = Record<string, Record<string, LoggedSet[]>>;
 const WORKOUT_LOG_KEY = 'wellness.workoutLog.v1';
 
+/** First sync: every day and exercise from both sides; this device wins where both logged the same one. */
+function mergeLogs(local: WorkoutLog, remote: WorkoutLog): WorkoutLog {
+  const out: WorkoutLog = { ...remote };
+  for (const [date, day] of Object.entries(local)) out[date] = { ...(out[date] ?? {}), ...day };
+  return out;
+}
+
 async function loadAll(): Promise<WorkoutLog> {
-  try {
-    const raw = await AsyncStorage.getItem(WORKOUT_LOG_KEY);
-    return raw ? (JSON.parse(raw) as WorkoutLog) : {};
-  } catch {
-    return {};
-  }
+  return syncedLoad<WorkoutLog>(WORKOUT_LOG_KEY, {}, mergeLogs);
 }
 
 export async function loadWorkoutDay(date: string): Promise<Record<string, LoggedSet[]>> {
@@ -176,9 +178,9 @@ export async function loadWorkoutDay(date: string): Promise<Record<string, Logge
 }
 
 export async function saveWorkoutDay(date: string, day: Record<string, LoggedSet[]>): Promise<void> {
-  const all = await loadAll();
+  const all = await localLoad<WorkoutLog>(WORKOUT_LOG_KEY, {});
   all[date] = day;
-  await AsyncStorage.setItem(WORKOUT_LOG_KEY, JSON.stringify(all));
+  await syncedSave(WORKOUT_LOG_KEY, all);
 }
 
 export const isFilled = (s: LoggedSet) => s.reps.trim() !== '' || s.weight.trim() !== '';
@@ -202,13 +204,10 @@ export async function loadLastTimes(date: string): Promise<Record<string, { date
 export type HistoryEntry = { date: string; day: string; exercise: string; sets: LoggedSet[]; lockedAt: string };
 const HISTORY_KEY = 'wellness.workoutHistory.v1';
 
+const sameEntry = (a: HistoryEntry, b: HistoryEntry) => a.date === b.date && a.exercise === b.exercise;
+
 export async function loadHistory(): Promise<HistoryEntry[]> {
-  try {
-    const raw = await AsyncStorage.getItem(HISTORY_KEY);
-    return raw ? (JSON.parse(raw) as HistoryEntry[]) : [];
-  } catch {
-    return [];
-  }
+  return syncedLoad<HistoryEntry[]>(HISTORY_KEY, [], (local, remote) => [...remote, ...local.filter((l) => !remote.some((r) => sameEntry(l, r)))]);
 }
 
 /** Saves an exercise's sets for good. Only filled-in sets are kept. */
@@ -217,7 +216,7 @@ export async function lockExercise(date: string, day: string, exercise: string, 
   const done = sets.filter(isFilled);
   if (!done.length || history.some((h) => h.date === date && h.exercise === exercise)) return history;
   const next = [...history, { date, day, exercise, sets: done, lockedAt: new Date().toISOString() }];
-  await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+  await syncedSave(HISTORY_KEY, next);
   return next;
 }
 
