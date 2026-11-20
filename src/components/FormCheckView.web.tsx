@@ -20,6 +20,6 @@ export function FormCheckView({ exercise, onMessage }: { exercise: string; onMes
     src: pageUrl(exercise),
     title: 'Check Form',
     allow: 'camera; fullscreen',
-    style: { border: 0, width: '100%', height: '100%', flex: 1, background: '#FAF7F2' },
+    style: { border: 0, width: '100%', height: '100%', flex: 1, background: '#05070D' },
   });
 }

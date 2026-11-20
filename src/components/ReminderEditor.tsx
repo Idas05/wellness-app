@@ -61,7 +61,7 @@ export function ReminderEditor({ visible, initial, defaultCategory, onSave, onDe
                   onPress={() => setCategory(c.id)}
                   style={[styles.chip, category === c.id && { backgroundColor: c.color, borderColor: c.color }]}
                 >
-                  <Text style={styles.chipText}>
+                  <Text style={[styles.chipText, category === c.id && { color: '#05070D', fontWeight: '600' }]}>
                     {c.emoji} {c.label}
                   </Text>
                 </Pressable>
@@ -73,7 +73,7 @@ export function ReminderEditor({ visible, initial, defaultCategory, onSave, onDe
               value={title}
               onChangeText={setTitle}
               placeholder="e.g. Brush teeth + skincare"
-              placeholderTextColor="#9A948C"
+              placeholderTextColor="#5B6680"
               style={styles.input}
             />
 
@@ -106,7 +106,7 @@ export function ReminderEditor({ visible, initial, defaultCategory, onSave, onDe
             </Pressable>
             {initial && (
               <Pressable onPress={() => onDelete(initial)} style={styles.secondary}>
-                <Text style={[styles.secondaryText, { color: '#C0392B' }]}>Delete</Text>
+                <Text style={[styles.secondaryText, { color: '#F87171' }]}>Delete</Text>
               </Pressable>
             )}
             <Pressable onPress={onClose} style={styles.secondary}>
@@ -134,32 +134,32 @@ function Stepper({ label, onMinus, onPlus }: { label: string; onMinus: () => voi
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end', alignItems: 'center' },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end', alignItems: 'center' },
   sheet: {
-    backgroundColor: '#FAF7F2',
+    backgroundColor: '#0E1422', borderTopWidth: 1, borderColor: '#24314D',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '92%',
     width: '100%',
     maxWidth: 560,
   },
-  heading: { fontSize: 22, fontWeight: '700', color: '#2B2724', marginBottom: 8 },
-  label: { fontSize: 13, fontWeight: '600', color: '#6B645C', marginTop: 18, marginBottom: 8, textTransform: 'uppercase' },
+  heading: { fontSize: 22, fontWeight: '700', color: '#EEF2FF', marginBottom: 8 },
+  label: { fontSize: 13, fontWeight: '600', color: '#8C98B3', marginTop: 18, marginBottom: 8, textTransform: 'uppercase' },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: '#DDD6CC', backgroundColor: '#fff' },
-  chipText: { fontSize: 14, color: '#2B2724' },
-  input: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#DDD6CC', padding: 12, fontSize: 16, color: '#2B2724' },
-  timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', borderRadius: 12, padding: 12 },
-  time: { fontSize: 32, fontWeight: '700', color: '#2B2724' },
+  chip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: '#1F2A40', backgroundColor: '#151D30' },
+  chipText: { fontSize: 14, color: '#EEF2FF' },
+  input: { backgroundColor: '#151D30', borderRadius: 12, borderWidth: 1, borderColor: '#1F2A40', padding: 12, fontSize: 16, color: '#EEF2FF' },
+  timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#151D30', borderRadius: 12, padding: 12 },
+  time: { fontSize: 32, fontWeight: '700', color: '#EEF2FF' },
   stepBtn: { padding: 8 },
-  stepText: { fontSize: 18, color: '#2B2724' },
-  stepLabel: { fontSize: 12, color: '#6B645C' },
+  stepText: { fontSize: 18, color: '#EEF2FF' },
+  stepLabel: { fontSize: 12, color: '#8C98B3' },
   days: { flexDirection: 'row', justifyContent: 'space-between' },
-  day: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#DDD6CC' },
-  dayOn: { backgroundColor: '#2B2724', borderColor: '#2B2724' },
-  dayText: { fontWeight: '600', color: '#2B2724' },
-  primary: { marginTop: 28, backgroundColor: '#2B2724', borderRadius: 14, padding: 16, alignItems: 'center' },
+  day: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#151D30', borderWidth: 1, borderColor: '#1F2A40' },
+  dayOn: { backgroundColor: '#3B82F6', borderColor: '#3B82F6' },
+  dayText: { fontWeight: '600', color: '#EEF2FF' },
+  primary: { marginTop: 28, backgroundColor: '#3B82F6', borderRadius: 14, padding: 16, alignItems: 'center' },
   primaryText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   secondary: { marginTop: 10, padding: 12, alignItems: 'center' },
-  secondaryText: { fontSize: 16, color: '#6B645C', fontWeight: '600' },
+  secondaryText: { fontSize: 16, color: '#8C98B3', fontWeight: '600' },
 });

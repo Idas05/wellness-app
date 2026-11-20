@@ -146,11 +146,11 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  banner: { backgroundColor: '#FDECEA', borderRadius: 12, padding: 12, marginBottom: 12 },
-  bannerText: { color: '#8A2B20', fontSize: 14 },
+  banner: { backgroundColor: '#2A1418', borderRadius: 12, padding: 12, marginBottom: 12 },
+  bannerText: { color: '#FCA5A5', fontSize: 14 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.ink, marginBottom: 6 },
   muted: { fontSize: 14, color: colors.muted, marginTop: 2 },
-  button: { marginTop: 14, backgroundColor: colors.ink, borderRadius: 14, padding: 14, alignItems: 'center' },
+  button: { marginTop: 14, backgroundColor: colors.accent, borderRadius: 14, padding: 14, alignItems: 'center' },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   ring: { width: 150, height: 150, borderRadius: 75, borderWidth: 12, alignItems: 'center', justifyContent: 'center', marginVertical: 8 },
   score: { fontSize: 44, fontWeight: '800', color: colors.ink },

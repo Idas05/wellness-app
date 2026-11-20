@@ -41,7 +41,7 @@ export function AuthSheet({ visible, onClose }: Props) {
             value={email}
             onChangeText={setEmail}
             placeholder="Email"
-            placeholderTextColor="#9A948C"
+            placeholderTextColor="#5B6680"
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
@@ -51,7 +51,7 @@ export function AuthSheet({ visible, onClose }: Props) {
             value={password}
             onChangeText={setPassword}
             placeholder="Password (6+ characters)"
-            placeholderTextColor="#9A948C"
+            placeholderTextColor="#5B6680"
             secureTextEntry
             autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
             style={styles.input}
@@ -89,9 +89,9 @@ export function AuthSheet({ visible, onClose }: Props) {
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end', alignItems: 'center' },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end', alignItems: 'center' },
   sheet: {
-    backgroundColor: '#FAF7F2',
+    backgroundColor: '#0E1422', borderTopWidth: 1, borderColor: '#24314D',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -99,21 +99,21 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 560,
   },
-  heading: { fontSize: 22, fontWeight: '700', color: '#2B2724' },
-  sub: { fontSize: 14, color: '#6B645C', marginTop: 4, marginBottom: 16 },
+  heading: { fontSize: 22, fontWeight: '700', color: '#EEF2FF' },
+  sub: { fontSize: 14, color: '#8C98B3', marginTop: 4, marginBottom: 16 },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#151D30',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#DDD6CC',
+    borderColor: '#1F2A40',
     padding: 12,
     fontSize: 16,
-    color: '#2B2724',
+    color: '#EEF2FF',
     marginBottom: 10,
   },
-  message: { color: '#8A2B20', fontSize: 14, marginBottom: 6 },
-  primary: { marginTop: 8, backgroundColor: '#2B2724', borderRadius: 14, padding: 16, alignItems: 'center' },
+  message: { color: '#FCA5A5', fontSize: 14, marginBottom: 6 },
+  primary: { marginTop: 8, backgroundColor: '#3B82F6', borderRadius: 14, padding: 16, alignItems: 'center' },
   primaryText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   secondary: { marginTop: 8, padding: 10, alignItems: 'center' },
-  secondaryText: { fontSize: 15, color: '#6B645C', fontWeight: '600' },
+  secondaryText: { fontSize: 15, color: '#8C98B3', fontWeight: '600' },
 });

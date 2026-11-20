@@ -47,22 +47,25 @@ export function Screen({ title, subtitle, children, refreshing, onRefresh, overl
 }
 
 export const colors = {
-  bg: '#FAF7F2',
-  card: '#FFFFFF',
-  ink: '#2B2724',
-  muted: '#6B645C',
-  line: '#ECE6DD',
+  bg: '#05070D',
+  card: '#0E1422',
+  field: '#151D30',
+  ink: '#EEF2FF',
+  muted: '#8C98B3',
+  line: '#1F2A40',
+  accent: '#3B82F6',
+  link: '#60A5FA',
 };
 
 export const card = StyleSheet.create({
-  box: { backgroundColor: colors.card, borderRadius: 18, padding: 16, marginBottom: 14 },
-  heading: { fontSize: 13, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', marginBottom: 10 },
+  box: { backgroundColor: colors.card, borderRadius: 18, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.line },
+  heading: { fontSize: 12, fontWeight: '700', color: colors.link, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 },
 });
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   pinned: { paddingHorizontal: 16, paddingTop: 8, width: '100%', maxWidth: 640, alignSelf: 'center' },
   container: { padding: 16, paddingTop: 8, width: '100%', maxWidth: 640, alignSelf: 'center' },
-  title: { fontSize: 32, fontWeight: '800', color: colors.ink },
+  title: { fontSize: 32, fontWeight: '800', color: colors.ink, letterSpacing: -0.5 },
   subtitle: { fontSize: 15, color: colors.muted, marginBottom: 14 },
 });

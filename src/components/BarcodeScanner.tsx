@@ -76,7 +76,7 @@ export function BarcodeScanner({ visible, onClose, onAdd }: Props) {
                   value={typed}
                   onChangeText={(t) => setTyped(t.replace(/\D/g, ''))}
                   placeholder="e.g. 012345678905"
-                  placeholderTextColor="#9A948C"
+                  placeholderTextColor="#5B6680"
                   keyboardType="number-pad"
                   style={[styles.input, { flex: 1 }]}
                   onSubmitEditing={() => typed.length >= 8 && look(typed)}
@@ -145,8 +145,8 @@ function Camera({ onScanned }: { onScanned: (r: BarcodeScanningResult) => void }
             : 'Camera access is off. Turn it on in Settings › Expo Go › Camera.'}
         </Text>
         {permission.canAskAgain && (
-          <Pressable onPress={requestPermission} style={[styles.button, { backgroundColor: '#fff' }]}>
-            <Text style={[styles.buttonText, { color: colors.ink }]}>Allow camera</Text>
+          <Pressable onPress={requestPermission} style={styles.button}>
+            <Text style={styles.buttonText}>Allow camera</Text>
           </Pressable>
         )}
       </View>
@@ -222,9 +222,9 @@ function FoundFood({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end', alignItems: 'center' },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end', alignItems: 'center' },
   sheet: {
-    backgroundColor: colors.bg,
+    backgroundColor: '#0E1422', borderTopWidth: 1, borderColor: '#24314D',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 20, gap: 4 },
   row: { flexDirection: 'row', gap: 10 },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#151D30',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.line,
@@ -260,12 +260,12 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   unit: { fontSize: 15, color: colors.muted, fontWeight: '600' },
-  button: { marginTop: 16, backgroundColor: colors.ink, borderRadius: 14, padding: 14, paddingHorizontal: 24, alignItems: 'center', alignSelf: 'stretch' },
-  smallButton: { backgroundColor: colors.ink, borderRadius: 12, paddingHorizontal: 16, justifyContent: 'center' },
+  button: { marginTop: 16, backgroundColor: colors.accent, borderRadius: 14, padding: 14, paddingHorizontal: 24, alignItems: 'center', alignSelf: 'stretch' },
+  smallButton: { backgroundColor: colors.accent, borderRadius: 12, paddingHorizontal: 16, justifyContent: 'center' },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   secondary: { marginTop: 8, padding: 10, alignItems: 'center' },
   secondaryText: { fontSize: 15, color: colors.muted, fontWeight: '600' },
-  stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', borderRadius: 14, padding: 8, marginTop: 16 },
+  stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#151D30', borderRadius: 14, padding: 8, marginTop: 16 },
   stepBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   stepText: { fontSize: 24, fontWeight: '700', color: colors.ink },
   amount: { fontSize: 18, fontWeight: '700', color: colors.ink },

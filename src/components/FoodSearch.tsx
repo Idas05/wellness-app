@@ -53,7 +53,7 @@ export function FoodSearch({
           value={query}
           onChangeText={setQuery}
           placeholder="Search for a food"
-          placeholderTextColor="#9A948C"
+          placeholderTextColor="#5B6680"
           style={styles.searchInput}
           autoFocus={autoFocus}
           autoCorrect={false}
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#fff',
+    backgroundColor: '#151D30',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.line,
@@ -142,5 +142,5 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '600', color: colors.ink },
   sub: { fontSize: 13, color: colors.muted, marginTop: 2 },
   cal: { fontSize: 15, fontWeight: '700', color: colors.ink },
-  plus: { fontSize: 18, color: '#2B6CB0', fontWeight: '700' },
+  plus: { fontSize: 18, color: '#60A5FA', fontWeight: '700' },
 });

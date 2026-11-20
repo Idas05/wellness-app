@@ -70,8 +70,8 @@ export default function FitnessTrackScreen() {
             <Text style={card.heading}>{dayLabel(latest.day, true)}</Text>
             <Text style={styles.big}>{fmt(latest.steps)}</Text>
             <Text style={styles.bigUnit}>steps</Text>
-            <Goal label="Steps" value={latest.steps} goal={STEP_GOAL} unit="" color="#5BBF7A" />
-            <Goal label="Exercise" value={latest.exercise_min} goal={EXERCISE_GOAL} unit=" min" color="#8EE04E" />
+            <Goal label="Steps" value={latest.steps} goal={STEP_GOAL} unit="" color="#3B82F6" />
+            <Goal label="Exercise" value={latest.exercise_min} goal={EXERCISE_GOAL} unit=" min" color="#22D3EE" />
 
             <View style={styles.grid}>
               <Stat label="Active calories" value={fmt(latest.active_cal)} unit="cal" />
@@ -93,7 +93,7 @@ export default function FitnessTrackScreen() {
                   return (
                     <View key={d.day} style={styles.barCol}>
                       <Text style={styles.barValue}>{d.steps == null ? '' : d.steps >= 1000 ? `${(d.steps / 1000).toFixed(1)}k` : d.steps}</Text>
-                      <View style={[styles.bar, { height: h, backgroundColor: hit ? '#5BBF7A' : '#C9D8C1' }]} />
+                      <View style={[styles.bar, { height: h, backgroundColor: hit ? '#3B82F6' : '#24314D' }]} />
                       <Text style={styles.barLabel}>{d.day === todayKey() ? 'Today' : new Date(`${d.day}T12:00:00`).toLocaleDateString([], { weekday: 'short' })}</Text>
                     </View>
                   );
@@ -183,7 +183,7 @@ function FitnessSetup({ hasData, count, onCheck, signedIn, onSignIn }: { hasData
           </Pressable>
         </>
       ) : tokenError ? (
-        <Text style={[styles.body, { color: '#8A2B20' }]}>{tokenError}</Text>
+        <Text style={[styles.body, { color: '#FCA5A5' }]}>{tokenError}</Text>
       ) : hasData && !open ? (
         <>
           <Text style={styles.body}>Connected. {count} day(s) received.</Text>
@@ -214,8 +214,8 @@ function FitnessSetup({ hasData, count, onCheck, signedIn, onSignIn }: { hasData
 }
 
 const styles = StyleSheet.create({
-  banner: { backgroundColor: '#FBE3DF' },
-  bannerText: { color: '#8A2B20', fontSize: 14, fontWeight: '600' },
+  banner: { backgroundColor: '#2A1418' },
+  bannerText: { color: '#FCA5A5', fontSize: 14, fontWeight: '600' },
   big: { fontSize: 44, fontWeight: '800', color: colors.ink, lineHeight: 48 },
   bigUnit: { fontSize: 15, fontWeight: '600', color: colors.muted },
   goalHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
@@ -237,8 +237,8 @@ const styles = StyleSheet.create({
   body: { fontSize: 15, color: colors.ink, lineHeight: 21 },
   muted: { fontSize: 13, color: colors.muted },
   small: { fontSize: 13, color: colors.muted, marginTop: 10 },
-  link: { color: '#2B6CB0', fontWeight: '700' },
-  button: { marginTop: 14, backgroundColor: colors.ink, borderRadius: 14, padding: 14, alignItems: 'center' },
+  link: { color: '#60A5FA', fontWeight: '700' },
+  button: { marginTop: 14, backgroundColor: colors.accent, borderRadius: 14, padding: 14, alignItems: 'center' },
   buttonLight: { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.line },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

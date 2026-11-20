@@ -164,12 +164,12 @@ function QuickAdd({ visible, mealLabel, onClose, onAdd }: { visible: boolean; me
         <View style={styles.sheet}>
           <Text style={styles.sheetTitle}>Quick add</Text>
           <Text style={styles.muted}>Already know the calories? Add them straight to {mealLabel}.</Text>
-          <TextInput value={name} onChangeText={setName} placeholder="What did you eat? (optional)" placeholderTextColor="#9A948C" style={[styles.input, { marginTop: 14 }]} />
+          <TextInput value={name} onChangeText={setName} placeholder="What did you eat? (optional)" placeholderTextColor="#5B6680" style={[styles.input, { marginTop: 14 }]} />
           <TextInput
             value={cal}
             onChangeText={(t) => setCal(t.replace(/[^0-9]/g, ''))}
             placeholder="Calories"
-            placeholderTextColor="#9A948C"
+            placeholderTextColor="#5B6680"
             keyboardType="number-pad"
             style={[styles.input, { marginTop: 10 }]}
             onSubmitEditing={add}
@@ -188,12 +188,12 @@ function QuickAdd({ visible, mealLabel, onClose, onAdd }: { visible: boolean; me
 
 const styles = StyleSheet.create({
   back: { marginBottom: 12, alignSelf: 'flex-start' },
-  backText: { color: '#2B6CB0', fontWeight: '700', fontSize: 15 },
+  backText: { color: '#60A5FA', fontWeight: '700', fontSize: 15 },
   meals: { flexDirection: 'row', gap: 6, marginBottom: 14 },
   mealChip: { flex: 1, minWidth: 0, alignItems: 'center', paddingVertical: 9, borderRadius: 999, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card },
-  chipOn: { backgroundColor: colors.ink, borderColor: colors.ink },
+  chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
   mealText: { fontSize: 13, fontWeight: '700', color: colors.ink },
-  recipeBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.ink, borderRadius: 16, padding: 16, marginBottom: 10 },
+  recipeBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.accent, borderRadius: 16, padding: 16, marginBottom: 10 },
   recipeIcon: { fontSize: 22, color: '#fff', fontWeight: '700' },
   recipeTitle: { fontSize: 17, fontWeight: '800', color: '#fff' },
   recipeSub: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
@@ -209,12 +209,12 @@ const styles = StyleSheet.create({
   tabTextOn: { color: colors.ink },
   muted: { fontSize: 14, color: colors.muted, lineHeight: 20 },
   editLink: { alignSelf: 'flex-start', marginTop: -6, marginBottom: 8 },
-  link: { color: '#2B6CB0', fontWeight: '700', fontSize: 13 },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end', alignItems: 'center' },
-  sheet: { backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 32, width: '100%', maxWidth: 560 },
+  link: { color: '#60A5FA', fontWeight: '700', fontSize: 13 },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end', alignItems: 'center' },
+  sheet: { backgroundColor: '#0E1422', borderTopWidth: 1, borderColor: '#24314D', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 32, width: '100%', maxWidth: 560 },
   sheetTitle: { fontSize: 22, fontWeight: '800', color: colors.ink, marginBottom: 4 },
-  input: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: colors.line, padding: 12, fontSize: 16, color: colors.ink },
-  button: { marginTop: 14, backgroundColor: colors.ink, borderRadius: 14, padding: 15, alignItems: 'center' },
+  input: { backgroundColor: '#151D30', borderRadius: 12, borderWidth: 1, borderColor: colors.line, padding: 12, fontSize: 16, color: colors.ink },
+  button: { marginTop: 14, backgroundColor: colors.accent, borderRadius: 14, padding: 15, alignItems: 'center' },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   secondaryText: { fontSize: 15, color: colors.muted, fontWeight: '600' },
 });

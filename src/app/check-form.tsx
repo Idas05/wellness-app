@@ -21,6 +21,6 @@ export default function CheckFormScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#FAF7F2' },
+  safe: { flex: 1, backgroundColor: '#05070D' },
   fill: { flex: 1 },
 });

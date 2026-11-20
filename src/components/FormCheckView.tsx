@@ -26,4 +26,4 @@ export function FormCheckView({ exercise, onMessage }: { exercise: string; onMes
   );
 }
 
-const styles = StyleSheet.create({ web: { flex: 1, backgroundColor: '#FAF7F2' } });
+const styles = StyleSheet.create({ web: { flex: 1, backgroundColor: '#05070D' } });
