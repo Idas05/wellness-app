@@ -1,5 +1,7 @@
 // Looks up packaged food by barcode in Open Food Facts, a free, open food database.
 // https://openfoodfacts.github.io/openfoodfacts-server/api/
+import { offMacros } from './foods';
+import type { Macros } from './macros';
 
 export type ScannedFood = {
   barcode: string;
@@ -9,6 +11,9 @@ export type ScannedFood = {
   servingLabel: string | null; // e.g. "1 bar (40 g)"
   /** Calories in 100 g, used when there's no serving info. */
   per100g: number | null;
+  /** Protein, fat and carbs to go with perServing and per100g, when the label lists them. */
+  macrosPerServing?: Macros;
+  macros100g?: Macros;
 };
 
 type OffNutriments = Record<string, number | string | undefined>;
@@ -54,5 +59,7 @@ export async function lookupBarcode(barcode: string): Promise<ScannedFood | null
     perServing: perServing !== null ? Math.round(perServing) : null,
     servingLabel: perServing !== null ? p.serving_size?.trim() || '1 serving' : null,
     per100g: per100g !== null ? Math.round(per100g) : null,
+    macrosPerServing: perServing !== null ? offMacros(n, qty).mServing : undefined,
+    macros100g: offMacros(n, qty).m100,
   };
 }

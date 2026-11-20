@@ -6,6 +6,7 @@ import { FoodDetailSheet, type PickedFood } from '../components/FoodDetailSheet'
 import { FoodRow, FoodSearch } from '../components/FoodSearch';
 import { card, colors, Screen } from '../components/Screen';
 import { displayName, loadRecent, recentToItem, rememberFood, type FoodItem, type RecentFood } from '../lib/foods';
+import { roundMacros, type Macros } from '../lib/macros';
 import { loadDay, MEALS, saveDay, todayKey, type MealId } from '../lib/nutrition';
 import { loadRecipes, perServing, type Recipe } from '../lib/recipes';
 import { newId } from '../lib/reminders';
@@ -36,10 +37,10 @@ export default function AddFoodScreen() {
 
   const close = () => (router.canGoBack() ? router.back() : router.navigate('/calories'));
 
-  const addEntry = async (name: string, calories: number) => {
+  const addEntry = async (name: string, calories: number, macros?: Macros) => {
     const day = todayKey();
     const foods = await loadDay(day);
-    await saveDay(day, [...foods, { id: newId(), name, calories, at: new Date().toISOString(), meal }]);
+    await saveDay(day, [...foods, { id: newId(), name, calories, ...(macros ? roundMacros(macros) : {}), at: new Date().toISOString(), meal }]);
     close();
   };
 
@@ -48,7 +49,7 @@ export default function AddFoodScreen() {
     if (p.food.source !== 'recipe') {
       await rememberFood({ name: p.food.name, brand: p.food.brand, serving: p.serving, qty: p.qty, servings: p.food.servings });
     }
-    await addEntry(`${displayName(p.food)} · ${p.amount}`, p.calories);
+    await addEntry(`${displayName(p.food)} · ${p.amount}`, p.calories, p.macros);
   };
 
   return (
@@ -135,27 +136,31 @@ export default function AddFoodScreen() {
       <BarcodeScanner
         visible={scanning}
         onClose={() => setScanning(false)}
-        onAdd={(name, calories) => {
+        onAdd={(name, calories, macros) => {
           setScanning(false);
-          addEntry(name, calories);
+          addEntry(name, calories, macros);
         }}
       />
 
-      <QuickAdd visible={quick} mealLabel={mealLabel} onClose={() => setQuick(false)} onAdd={(n, c) => (setQuick(false), addEntry(n, c))} />
+      <QuickAdd visible={quick} mealLabel={mealLabel} onClose={() => setQuick(false)} onAdd={(n, c, m) => (setQuick(false), addEntry(n, c, m))} />
     </Screen>
   );
 }
 
-function QuickAdd({ visible, mealLabel, onClose, onAdd }: { visible: boolean; mealLabel: string; onClose: () => void; onAdd: (name: string, cal: number) => void }) {
+function QuickAdd({ visible, mealLabel, onClose, onAdd }: { visible: boolean; mealLabel: string; onClose: () => void; onAdd: (name: string, cal: number, macros?: Macros) => void }) {
   const [name, setName] = useState('');
   const [cal, setCal] = useState('');
+  const [mac, setMac] = useState({ protein: '', carbs: '', fat: '' });
   const calories = parseInt(cal, 10);
   const ok = calories > 0 && calories < 10000;
   const add = () => {
     if (!ok) return;
-    onAdd(name.trim() || 'Quick add', calories);
+    const g = (t: string) => parseFloat(t) || 0;
+    const any = mac.protein || mac.carbs || mac.fat;
+    onAdd(name.trim() || 'Quick add', calories, any ? { protein: g(mac.protein), fat: g(mac.fat), carbs: g(mac.carbs) } : undefined);
     setName('');
     setCal('');
+    setMac({ protein: '', carbs: '', fat: '' });
   };
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -174,6 +179,21 @@ function QuickAdd({ visible, mealLabel, onClose, onAdd }: { visible: boolean; me
             style={[styles.input, { marginTop: 10 }]}
             onSubmitEditing={add}
           />
+          <Text style={[styles.muted, { marginTop: 12 }]}>Protein, carbs and fat in grams (optional)</Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
+            {(['protein', 'carbs', 'fat'] as const).map((k) => (
+              <TextInput
+                key={k}
+                value={mac[k]}
+                onChangeText={(t) => setMac((m) => ({ ...m, [k]: t.replace(/[^0-9.]/g, '') }))}
+                placeholder={k[0].toUpperCase() + k.slice(1)}
+                placeholderTextColor="#5B6680"
+                keyboardType="decimal-pad"
+                style={[styles.input, { flex: 1, minWidth: 0 }]}
+                accessibilityLabel={`${k} grams`}
+              />
+            ))}
+          </View>
           <Pressable onPress={add} disabled={!ok} style={[styles.button, !ok && { opacity: 0.4 }]}>
             <Text style={styles.buttonText}>Add {ok ? `${calories} cal` : ''}</Text>
           </Pressable>
