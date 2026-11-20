@@ -114,6 +114,36 @@ export function shuffle<T>(xs: T[]): T[] {
   return a;
 }
 
+// ---- Not showing the same recipes every visit ----
+
+/** Recipe ids already shown for each meal, oldest first. Synced, so the phone and website don't repeat each other. */
+export type Seen = Partial<Record<MealId, string[]>>;
+const SEEN_KEY = 'wellness.mealPrepSeen.v1';
+
+export async function loadSeen(): Promise<Seen> {
+  return syncedLoad<Seen>(SEEN_KEY, {}, (local, remote) => {
+    const out: Seen = { ...remote };
+    for (const [m, ids] of Object.entries(local) as [MealId, string[]][]) out[m] = [...new Set([...(out[m] ?? []), ...ids])];
+    return out;
+  });
+}
+
+/** Adds what's on screen to the seen list. Once every match has been seen, starts the list over from these. */
+export async function markSeen(meal: MealId, ids: string[], matchIds: string[]): Promise<void> {
+  const seen = await loadSeen();
+  let list = [...(seen[meal] ?? []).filter((id) => !ids.includes(id)), ...ids];
+  if (matchIds.every((id) => list.includes(id))) list = ids;
+  await syncedSave(SEEN_KEY, { ...seen, [meal]: list.slice(-200) });
+}
+
+/** Recipes you haven't been shown yet come first, in a random mix; then the ones seen longest ago. */
+export function freshFirst(matches: Suggestion[], seenIds: string[] = []): Suggestion[] {
+  const rank = new Map(seenIds.map((id, i) => [id, i]));
+  const fresh = shuffle(matches.filter((m) => !rank.has(m.recipe.id)));
+  const old = matches.filter((m) => rank.has(m.recipe.id)).sort((a, b) => rank.get(a.recipe.id)! - rank.get(b.recipe.id)!);
+  return [...fresh, ...old];
+}
+
 // ---- Rewriting a recipe so your portion is one serving ----
 
 const FRACTIONS: Record<string, number> = { '¼': 0.25, '⅓': 1 / 3, '½': 0.5, '⅔': 2 / 3, '¾': 0.75 };
