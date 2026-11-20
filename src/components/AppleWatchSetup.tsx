@@ -52,7 +52,7 @@ export function AppleWatchSetup() {
             </Pressable>
           </>
         ) : tokenError ? (
-          <Text style={[styles.body, { color: '#8A2B20' }]}>{tokenError}</Text>
+          <Text style={[styles.body, { color: '#FCA5A5' }]}>{tokenError}</Text>
         ) : folded ? (
           <>
             <Text style={styles.body}>Connected. {sleep.length} night(s) received.</Text>
@@ -115,7 +115,7 @@ export function CopyRow({
 const styles = StyleSheet.create({
   body: { fontSize: 15, color: colors.ink, lineHeight: 21 },
   small: { fontSize: 13, color: colors.muted, marginTop: 10 },
-  button: { marginTop: 14, backgroundColor: colors.ink, borderRadius: 14, padding: 14, alignItems: 'center' },
+  button: { marginTop: 14, backgroundColor: colors.accent, borderRadius: 14, padding: 14, alignItems: 'center' },
   buttonLight: { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.line },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   copyRow: {
@@ -129,6 +129,6 @@ const styles = StyleSheet.create({
   },
   copyLabel: { fontSize: 12, fontWeight: '700', color: colors.muted, textTransform: 'uppercase' },
   copyValue: { fontSize: 14, color: colors.ink, marginTop: 2 },
-  link: { color: '#2B6CB0', fontWeight: '700' },
-  copyAction: { fontSize: 14, fontWeight: '700', color: '#2B6CB0' },
+  link: { color: '#60A5FA', fontWeight: '700' },
+  copyAction: { fontSize: 14, fontWeight: '700', color: '#60A5FA' },
 });

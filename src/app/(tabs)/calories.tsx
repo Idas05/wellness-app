@@ -78,8 +78,8 @@ export default function CaloriesScreen() {
   return (
     <Screen title="Cal Counter" subtitle="Today" pinned={<CalorieBar eaten={eaten} goal={plan.dailyCalories} />}>
       {syncError ? (
-        <View style={[card.box, { backgroundColor: '#FBE3DF' }]}>
-          <Text style={{ color: '#8A2B20', fontSize: 14, fontWeight: '600' }}>{syncError}</Text>
+        <View style={[card.box, { backgroundColor: '#2A1418' }]}>
+          <Text style={{ color: '#FCA5A5', fontSize: 14, fontWeight: '600' }}>{syncError}</Text>
         </View>
       ) : null}
       {MEALS.map((m) => (
@@ -141,13 +141,13 @@ function CalorieBar({ eaten, goal }: { eaten: number; goal: number }) {
           {eaten.toLocaleString()}
           <Text style={styles.barOf}> / {goal.toLocaleString()} cal</Text>
         </Text>
-        <Text style={[styles.barLeft, over && { color: '#C0392B' }]}>
+        <Text style={[styles.barLeft, over && { color: '#F87171' }]}>
           {over ? `${(-left).toLocaleString()} over` : `${left.toLocaleString()} left`}
         </Text>
       </View>
       <View style={styles.track} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: goal, now: eaten }}>
         <View
-          style={[styles.fill, { width: `${Math.min(pct, 1) * 100}%`, backgroundColor: over ? '#F29E6D' : '#5BBF7A' }]}
+          style={[styles.fill, { width: `${Math.min(pct, 1) * 100}%`, backgroundColor: over ? '#F29E6D' : '#3B82F6' }]}
         />
       </View>
     </View>
@@ -236,17 +236,17 @@ function Questionnaire({
   return (
     <View style={card.box}>
       <Field label="Age">
-        <TextInput value={age} onChangeText={digits(setAge)} keyboardType="number-pad" placeholder="e.g. 20" placeholderTextColor="#9A948C" style={styles.input} />
+        <TextInput value={age} onChangeText={digits(setAge)} keyboardType="number-pad" placeholder="e.g. 20" placeholderTextColor="#5B6680" style={styles.input} />
       </Field>
 
       <Field label="Height">
         <View style={styles.addRow}>
           <View style={styles.unitBox}>
-            <TextInput value={feet} onChangeText={digits(setFeet)} keyboardType="number-pad" placeholder="5" placeholderTextColor="#9A948C" style={[styles.input, { flex: 1 }]} />
+            <TextInput value={feet} onChangeText={digits(setFeet)} keyboardType="number-pad" placeholder="5" placeholderTextColor="#5B6680" style={[styles.input, { flex: 1 }]} />
             <Text style={styles.unit}>ft</Text>
           </View>
           <View style={styles.unitBox}>
-            <TextInput value={inches} onChangeText={digits(setInches)} keyboardType="number-pad" placeholder="10" placeholderTextColor="#9A948C" style={[styles.input, { flex: 1 }]} />
+            <TextInput value={inches} onChangeText={digits(setInches)} keyboardType="number-pad" placeholder="10" placeholderTextColor="#5B6680" style={[styles.input, { flex: 1 }]} />
             <Text style={styles.unit}>in</Text>
           </View>
         </View>
@@ -264,14 +264,14 @@ function Questionnaire({
 
       <Field label="Weight">
         <View style={styles.unitBox}>
-          <TextInput value={weight} onChangeText={digits(setWeight, true)} keyboardType="decimal-pad" placeholder="e.g. 180" placeholderTextColor="#9A948C" style={[styles.input, { flex: 1 }]} />
+          <TextInput value={weight} onChangeText={digits(setWeight, true)} keyboardType="decimal-pad" placeholder="e.g. 180" placeholderTextColor="#5B6680" style={[styles.input, { flex: 1 }]} />
           <Text style={styles.unit}>lb</Text>
         </View>
       </Field>
 
       <Field label="Goal weight">
         <View style={styles.unitBox}>
-          <TextInput value={goal} onChangeText={digits(setGoal, true)} keyboardType="decimal-pad" placeholder="e.g. 165" placeholderTextColor="#9A948C" style={[styles.input, { flex: 1 }]} />
+          <TextInput value={goal} onChangeText={digits(setGoal, true)} keyboardType="decimal-pad" placeholder="e.g. 165" placeholderTextColor="#5B6680" style={[styles.input, { flex: 1 }]} />
           <Text style={styles.unit}>lb</Text>
         </View>
       </Field>
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   body: { fontSize: 16, color: colors.ink, lineHeight: 22 },
   muted: { fontSize: 14, color: colors.muted, marginTop: 4 },
   small: { fontSize: 13, color: colors.muted, marginTop: 10, lineHeight: 18 },
-  link: { color: '#2B6CB0', fontWeight: '700', fontSize: 14, marginTop: 12 },
+  link: { color: '#60A5FA', fontWeight: '700', fontSize: 14, marginTop: 12 },
   label: { fontSize: 13, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', marginBottom: 6 },
   input: {
     backgroundColor: colors.bg,
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   unitBox: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8 },
   unit: { fontSize: 15, color: colors.muted, fontWeight: '600' },
   chip: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg, alignItems: 'center' },
-  chipOn: { backgroundColor: colors.ink, borderColor: colors.ink },
+  chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
   option: {
     padding: 12,
     borderRadius: 12,
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   },
   optionHint: { fontSize: 13, color: colors.muted, marginTop: 2 },
   chipText: { fontSize: 16, fontWeight: '600', color: colors.ink },
-  button: { marginTop: 12, backgroundColor: colors.ink, borderRadius: 14, padding: 14, alignItems: 'center' },
+  button: { marginTop: 12, backgroundColor: colors.accent, borderRadius: 14, padding: 14, alignItems: 'center' },
   mealHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   mealTitle: { fontSize: 18, fontWeight: '700', color: colors.ink },
   mealTotal: { fontSize: 15, fontWeight: '700', color: colors.muted },
@@ -372,16 +372,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   lightText: { fontSize: 15, fontWeight: '700', color: colors.ink },
-  darkButton: { backgroundColor: colors.ink, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
-  scanButton: { backgroundColor: colors.ink, borderRadius: 14, padding: 16, alignItems: 'center' },
+  darkButton: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  scanButton: { backgroundColor: colors.accent, borderRadius: 14, padding: 16, alignItems: 'center' },
   scanText: { color: '#fff', fontSize: 17, fontWeight: '700' },
   or: { textAlign: 'center', color: colors.muted, fontSize: 13, marginVertical: 10 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  barCard: { marginBottom: 6, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  barCard: { marginBottom: 6, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   barTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 },
   barBig: { fontSize: 26, fontWeight: '800', color: colors.ink },
   barOf: { fontSize: 15, fontWeight: '600', color: colors.muted },
-  barLeft: { fontSize: 15, fontWeight: '700', color: '#3E8E5A' },
+  barLeft: { fontSize: 15, fontWeight: '700', color: '#34D399' },
   track: { height: 16, borderRadius: 8, backgroundColor: colors.line, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 8 },
   foodRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.line },

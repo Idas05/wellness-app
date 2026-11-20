@@ -143,9 +143,9 @@ function FilterChip({ label, active, color, onPress }: { label: string; active: 
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.chip, active && { backgroundColor: color ?? '#2B2724', borderColor: color ?? '#2B2724' }]}
+      style={[styles.chip, active && { backgroundColor: color ?? '#3B82F6', borderColor: color ?? '#3B82F6' }]}
     >
-      <Text style={[styles.chipText, active && !color && { color: '#fff' }]}>{label}</Text>
+      <Text style={[styles.chipText, active && { color: color ? '#05070D' : '#fff' }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -155,39 +155,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#fff',
+    backgroundColor: '#0E1422',
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
   },
-  accountText: { flex: 1, color: '#2B2724', fontSize: 14 },
-  accountLink: { color: '#2B6CB0', fontSize: 14, fontWeight: '700' },
-  banner: { backgroundColor: '#FDECEA', borderRadius: 12, padding: 12, marginBottom: 12 },
-  bannerText: { color: '#8A2B20', fontSize: 14 },
-  hint: { color: '#6B645C', fontSize: 13, marginBottom: 8 },
+  accountText: { flex: 1, color: '#EEF2FF', fontSize: 14 },
+  accountLink: { color: '#60A5FA', fontSize: 14, fontWeight: '700' },
+  banner: { backgroundColor: '#2A1418', borderRadius: 12, padding: 12, marginBottom: 12 },
+  bannerText: { color: '#FCA5A5', fontSize: 14 },
+  hint: { color: '#8C98B3', fontSize: 13, marginBottom: 8 },
   filters: { gap: 8, paddingVertical: 4 },
-  chip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: '#DDD6CC', backgroundColor: '#fff' },
-  chipText: { fontSize: 14, color: '#2B2724' },
+  chip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: '#1F2A40', backgroundColor: '#151D30' },
+  chipText: { fontSize: 14, color: '#EEF2FF' },
   empty: { alignItems: 'center', marginTop: 60, paddingHorizontal: 24 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#2B2724' },
-  emptyText: { fontSize: 15, color: '#6B645C', textAlign: 'center', marginTop: 6 },
-  groupTitle: { fontSize: 15, fontWeight: '700', color: '#6B645C', marginBottom: 8 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#EEF2FF' },
+  emptyText: { fontSize: 15, color: '#8C98B3', textAlign: 'center', marginTop: 6 },
+  groupTitle: { fontSize: 15, fontWeight: '700', color: '#8C98B3', marginBottom: 8 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#0E1422',
     borderRadius: 14,
     padding: 14,
     marginBottom: 8,
     borderLeftWidth: 5,
   },
-  cardTime: { fontSize: 22, fontWeight: '700', color: '#2B2724' },
-  cardSub: { fontSize: 14, color: '#6B645C', marginTop: 2 },
+  cardTime: { fontSize: 22, fontWeight: '700', color: '#EEF2FF' },
+  cardSub: { fontSize: 14, color: '#8C98B3', marginTop: 2 },
   fab: {
     position: 'absolute',
     bottom: 112,
     alignSelf: 'center',
-    backgroundColor: '#2B2724',
+    backgroundColor: '#3B82F6',
     paddingVertical: 16,
     paddingHorizontal: 28,
     borderRadius: 999,

@@ -74,7 +74,7 @@ export default function RecipeScreen() {
 
       <View style={card.box}>
         <Text style={styles.label}>Recipe name</Text>
-        <TextInput value={name} onChangeText={(t) => (setName(t), setError(null))} placeholder="e.g. Chicken burrito bowl" placeholderTextColor="#9A948C" style={styles.input} accessibilityLabel="Recipe name" />
+        <TextInput value={name} onChangeText={(t) => (setName(t), setError(null))} placeholder="e.g. Chicken burrito bowl" placeholderTextColor="#5B6680" style={styles.input} accessibilityLabel="Recipe name" />
         <Text style={[styles.label, { marginTop: 14 }]}>Makes how many servings?</Text>
         <TextInput value={servings} onChangeText={(t) => setServings(t.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" style={[styles.input, { width: 100 }]} accessibilityLabel="Servings" />
       </View>
@@ -116,7 +116,7 @@ export default function RecipeScreen() {
       </Pressable>
       {id ? (
         <Pressable onPress={remove} style={{ padding: 12, alignItems: 'center' }}>
-          <Text style={[styles.secondaryText, { color: '#C0392B' }]}>Delete recipe</Text>
+          <Text style={[styles.secondaryText, { color: '#F87171' }]}>Delete recipe</Text>
         </Pressable>
       ) : null}
 
@@ -136,8 +136,8 @@ export default function RecipeScreen() {
                 <View style={card.box}>
                   <Text style={card.heading}>Or enter it yourself</Text>
                   <View style={{ flexDirection: 'row', gap: 10 }}>
-                    <TextInput value={manualName} onChangeText={setManualName} placeholder="Ingredient" placeholderTextColor="#9A948C" style={[styles.input, { flex: 1, minWidth: 0 }]} />
-                    <TextInput value={manualCal} onChangeText={(t) => setManualCal(t.replace(/[^0-9]/g, ''))} placeholder="Cal" placeholderTextColor="#9A948C" keyboardType="number-pad" style={[styles.input, { width: 80 }]} />
+                    <TextInput value={manualName} onChangeText={setManualName} placeholder="Ingredient" placeholderTextColor="#5B6680" style={[styles.input, { flex: 1, minWidth: 0 }]} />
+                    <TextInput value={manualCal} onChangeText={(t) => setManualCal(t.replace(/[^0-9]/g, ''))} placeholder="Cal" placeholderTextColor="#5B6680" keyboardType="number-pad" style={[styles.input, { width: 80 }]} />
                   </View>
                   <Pressable onPress={addManual} style={[styles.lightButton, { marginTop: 10 }]}>
                     <Text style={styles.lightText}>Add</Text>
@@ -155,9 +155,9 @@ export default function RecipeScreen() {
 
 const styles = StyleSheet.create({
   back: { marginBottom: 12, alignSelf: 'flex-start' },
-  backText: { color: '#2B6CB0', fontWeight: '700', fontSize: 15 },
+  backText: { color: '#60A5FA', fontWeight: '700', fontSize: 15 },
   label: { fontSize: 13, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', marginBottom: 6 },
-  input: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: colors.line, padding: 12, fontSize: 16, color: colors.ink },
+  input: { backgroundColor: '#151D30', borderRadius: 12, borderWidth: 1, borderColor: colors.line, padding: 12, fontSize: 16, color: colors.ink },
   muted: { fontSize: 13, color: colors.muted, marginTop: 2 },
   ingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.line },
   ingName: { fontSize: 15, fontWeight: '600', color: colors.ink },
@@ -168,8 +168,8 @@ const styles = StyleSheet.create({
   totals: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   totalBig: { fontSize: 26, fontWeight: '800', color: colors.ink },
   totalSmall: { fontSize: 17, fontWeight: '700', color: colors.ink },
-  error: { color: '#C0392B', fontWeight: '600', textAlign: 'center', marginBottom: 8 },
-  button: { backgroundColor: colors.ink, borderRadius: 14, padding: 15, alignItems: 'center' },
+  error: { color: '#F87171', fontWeight: '600', textAlign: 'center', marginBottom: 8 },
+  button: { backgroundColor: colors.accent, borderRadius: 14, padding: 15, alignItems: 'center' },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   secondaryText: { fontSize: 15, color: colors.muted, fontWeight: '600' },
   modalBody: { padding: 16, width: '100%', maxWidth: 640, alignSelf: 'center' },

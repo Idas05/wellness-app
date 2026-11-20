@@ -11,8 +11,8 @@ function GlobalSheets() {
 export default function RootLayout() {
   return (
     <AppProvider>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FAF7F2' } }}>
+      <StatusBar style="light" />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#05070D' } }}>
         <Stack.Screen name="(tabs)" />
       </Stack>
       <GlobalSheets />

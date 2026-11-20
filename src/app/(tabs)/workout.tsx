@@ -109,7 +109,7 @@ export default function WorkoutScreen() {
             >
               <Text style={[styles.dayShort, on && styles.onText]}>{d.short}</Text>
               <Text style={[styles.dayTitle, on && styles.onText]}>{d.title}</Text>
-              {d.weekday === today ? <View style={[styles.dot, on && { backgroundColor: '#fff' }]} /> : null}
+              {d.weekday === today ? <View style={[styles.dot, on && { backgroundColor: '#151D30' }]} /> : null}
             </Pressable>
           );
         })}
@@ -264,7 +264,7 @@ function ExerciseRow({
                 onChangeText={(t) => edit(i, 'weight', t)}
                 editable={!locked}
                 placeholder={last?.sets[i]?.weight || 'lb'}
-                placeholderTextColor="#B5AEA5"
+                placeholderTextColor="#5B6680"
                 keyboardType="decimal-pad"
                 accessibilityLabel={`Set ${i + 1} weight`}
                 style={[styles.logInput, locked && styles.logInputLocked]}
@@ -274,7 +274,7 @@ function ExerciseRow({
                 onChangeText={(t) => edit(i, 'reps', t)}
                 editable={!locked}
                 placeholder={last?.sets[i]?.reps || 'reps'}
-                placeholderTextColor="#B5AEA5"
+                placeholderTextColor="#5B6680"
                 keyboardType="number-pad"
                 accessibilityLabel={`Set ${i + 1} reps`}
                 style={[styles.logInput, locked && styles.logInputLocked]}
@@ -303,7 +303,7 @@ function ExerciseRow({
               accessibilityLabel={`Check form for ${exercise.name}`}
               style={[styles.smallBtn, styles.formBtn]}
             >
-              <Text style={[styles.smallBtnText, { color: '#2B6CB0' }]}>Check Form</Text>
+              <Text style={[styles.smallBtnText, { color: '#60A5FA' }]}>Check Form</Text>
             </Pressable>
             <Pressable
               onPress={() => onLock(rows)}
@@ -325,8 +325,8 @@ const styles = StyleSheet.create({
   body: { fontSize: 16, color: colors.ink, lineHeight: 22 },
   muted: { fontSize: 14, color: colors.muted, marginTop: 4 },
   small: { fontSize: 13, color: colors.muted, marginTop: 10, lineHeight: 18 },
-  link: { color: '#2B6CB0', fontWeight: '700', fontSize: 14, marginBottom: 12 },
-  button: { marginTop: 14, backgroundColor: colors.ink, borderRadius: 14, padding: 14, alignItems: 'center' },
+  link: { color: '#60A5FA', fontWeight: '700', fontSize: 14, marginBottom: 12 },
+  button: { marginTop: 14, backgroundColor: colors.accent, borderRadius: 14, padding: 14, alignItems: 'center' },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   week: { flexDirection: 'row', gap: 6, marginBottom: 14 },
   dayChip: {
@@ -339,11 +339,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
   },
-  dayChipOn: { backgroundColor: colors.ink, borderColor: colors.ink },
+  dayChipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
   dayShort: { fontSize: 12, fontWeight: '600', color: colors.muted },
   dayTitle: { fontSize: 13, fontWeight: '700', color: colors.ink, marginTop: 2 },
   onText: { color: '#fff' },
-  dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.ink, marginTop: 4 },
+  dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.accent, marginTop: 4 },
   dayHeading: { fontSize: 22, fontWeight: '800', color: colors.ink },
   hint: { fontSize: 13, color: colors.muted, marginTop: 8, marginBottom: 2 },
   exBlock: { borderTopWidth: 1, borderTopColor: colors.line },
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   chev: { fontSize: 14, color: colors.muted, width: 14 },
   loggedDraft: { fontSize: 13, color: colors.muted, fontWeight: '600', marginTop: 3 },
   logInputLocked: { backgroundColor: colors.line, color: colors.ink },
-  logged: { fontSize: 13, color: '#3E8E5A', fontWeight: '600', marginTop: 3 },
+  logged: { fontSize: 13, color: '#34D399', fontWeight: '600', marginTop: 3 },
   logBox: { backgroundColor: colors.bg, borderRadius: 14, padding: 12, marginBottom: 12 },
   logHead: { flexDirection: 'row', gap: 8, marginBottom: 6 },
   logLabel: { fontSize: 12, fontWeight: '700', color: colors.muted, textTransform: 'uppercase' },
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   logInput: {
     flex: 1,
     minWidth: 0,
-    backgroundColor: '#fff',
+    backgroundColor: '#151D30',
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.line,
@@ -370,17 +370,17 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   logActions: { flexDirection: 'row', gap: 8, marginTop: 4, flexWrap: 'wrap' },
-  smallBtn: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line },
-  formBtn: { borderColor: '#2B6CB0' },
-  doneBtn: { backgroundColor: colors.ink, borderColor: colors.ink, marginLeft: 'auto' },
+  smallBtn: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, backgroundColor: '#151D30', borderWidth: 1, borderColor: colors.line },
+  formBtn: { borderColor: '#60A5FA' },
+  doneBtn: { backgroundColor: colors.accent, borderColor: colors.accent, marginLeft: 'auto' },
   smallBtnText: { fontSize: 14, fontWeight: '700', color: colors.ink },
   exName: { fontSize: 16, fontWeight: '600', color: colors.ink },
   note: { fontSize: 13, color: colors.muted, marginTop: 2 },
   sets: { fontSize: 15, fontWeight: '700', color: colors.ink },
-  cardio: { backgroundColor: '#EEF3FB' },
+  cardio: { backgroundColor: '#0F1E3A' },
   cardioRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   cardioMin: { fontSize: 30, fontWeight: '800', color: colors.ink },
   cardioUnit: { fontSize: 15, fontWeight: '700', color: colors.muted },
-  cardioSetting: { fontSize: 15, fontWeight: '700', color: '#2B6CB0', marginTop: 2 },
+  cardioSetting: { fontSize: 15, fontWeight: '700', color: '#60A5FA', marginTop: 2 },
   cardioWhat: { fontSize: 17, fontWeight: '700', color: colors.ink, marginLeft: 8, flexShrink: 1 },
 });

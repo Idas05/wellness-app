@@ -36,7 +36,7 @@ function PillTabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
               accessibilityLabel={tab.label}
               style={[styles.item, focused && styles.itemActive]}
             >
-              <Ionicons name={focused ? tab.iconActive : tab.icon} size={22} color="#fff" />
+              <Ionicons name={focused ? tab.iconActive : tab.icon} size={22} color={focused ? '#fff' : '#8C98B3'} />
               <Text style={[styles.label, focused && styles.labelActive]} numberOfLines={2}>
                 {tab.label}
               </Text>
@@ -52,7 +52,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       tabBar={(props) => <PillTabBar {...props} />}
-      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: '#FAF7F2' } }}
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: '#05070D' } }}
     >
       <Tabs.Screen name="index" options={{ title: 'Reminders' }} />
       <Tabs.Screen name="sleep" options={{ title: 'Sleep' }} />
@@ -68,19 +68,21 @@ const styles = StyleSheet.create({
   wrap: { position: 'absolute', left: 10, right: 10, alignItems: 'center' },
   bar: {
     flexDirection: 'row',
-    backgroundColor: '#2B2724',
+    backgroundColor: 'rgba(14,20,34,0.92)',
     borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#24314D',
     padding: 4,
     width: '100%',
     maxWidth: 480,
     shadowColor: '#000',
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.5,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 10,
   },
   item: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 8, paddingBottom: 6, borderRadius: 999, gap: 2 },
-  itemActive: { backgroundColor: 'rgba(255,255,255,0.16)' },
-  label: { color: 'rgba(255,255,255,0.7)', fontSize: 9.5, fontWeight: '600', textAlign: 'center', lineHeight: 11.5, letterSpacing: -0.1 },
+  itemActive: { backgroundColor: '#3B82F6' },
+  label: { color: '#8C98B3', fontSize: 9.5, fontWeight: '600', textAlign: 'center', lineHeight: 11.5, letterSpacing: -0.1 },
   labelActive: { color: '#fff' },
 });
