@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from './supabase';
 
 export type Sex = 'male' | 'female';
 
@@ -34,7 +35,15 @@ export const MEALS = [
 
 export type MealId = (typeof MEALS)[number]['id'];
 
-export type FoodEntry = { id: string; name: string; calories: number; at: string; meal?: MealId };
+export type FoodEntry = {
+  id: string;
+  name: string;
+  calories: number;
+  at: string;
+  meal?: MealId;
+  /** Set once the entry is saved to your account, so a later sync can tell "deleted elsewhere" from "not uploaded yet". */
+  synced?: boolean;
+};
 
 /** Foods logged before meal sections existed are sorted in by the time they were added. */
 export function mealOf(f: FoodEntry): MealId {
@@ -88,7 +97,7 @@ export function calculatePlan(p: CalorieProfile): Plan {
   };
 }
 
-export async function loadProfile(): Promise<CalorieProfile | null> {
+async function loadLocalProfile(): Promise<CalorieProfile | null> {
   try {
     const raw = await AsyncStorage.getItem(PROFILE_KEY);
     return raw ? (JSON.parse(raw) as CalorieProfile) : null;
@@ -97,9 +106,59 @@ export async function loadProfile(): Promise<CalorieProfile | null> {
   }
 }
 
+/** Your goal, from your account when signed in (so phone and web match), else from this device. */
+export async function loadProfile(): Promise<CalorieProfile | null> {
+  const local = await loadLocalProfile();
+  if (!(await signedIn())) return local;
+  try {
+    const { data, error } = await supabase!.from('calorie_profiles').select('profile').maybeSingle();
+    if (error) throw error;
+    if (data?.profile) {
+      await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(data.profile));
+      return data.profile as CalorieProfile;
+    }
+    if (local) await pushProfile(local);
+  } catch (e) {
+    reportSyncError(e);
+  }
+  return local;
+}
+
+async function pushProfile(p: CalorieProfile) {
+  const { error } = await supabase!.from('calorie_profiles').upsert({ profile: p, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}
+
 export async function saveProfile(p: CalorieProfile): Promise<void> {
   await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+  if (!(await signedIn())) return;
+  try {
+    await pushProfile(p);
+  } catch (e) {
+    reportSyncError(e);
+  }
 }
+
+// ---- Account sync ----
+
+async function signedIn(): Promise<boolean> {
+  if (!supabase) return false;
+  const { data } = await supabase.auth.getSession();
+  return !!data.session;
+}
+
+/** The last sync problem, e.g. the tables not set up yet. Cal Counter shows it. */
+export let foodSyncError: string | null = null;
+function reportSyncError(e: unknown) {
+  const msg = String((e as { message?: string })?.message ?? e);
+  foodSyncError = /food_entries|calorie_profiles|schema cache/.test(msg) ? 'Syncing food needs a one-time setup: run supabase/food-sync.sql in Supabase.' : `Couldn't sync food: ${msg}`;
+}
+function clearSyncError() {
+  foodSyncError = null;
+}
+
+type FoodRow = { id: string; day: string; name: string; calories: number; at: string; meal: string | null };
+const toRow = (date: string, f: FoodEntry) => ({ id: f.id, day: date, name: f.name, calories: f.calories, at: f.at, meal: f.meal ?? null, updated_at: new Date().toISOString() });
 
 /** Local date like 2026-11-06, so "today" follows your own clock. */
 export function todayKey(d = new Date()): string {
@@ -119,12 +178,62 @@ async function loadLog(): Promise<Log> {
   }
 }
 
-export async function loadDay(date: string): Promise<FoodEntry[]> {
+async function loadLocalDay(date: string): Promise<FoodEntry[]> {
   return (await loadLog())[date] ?? [];
 }
 
-export async function saveDay(date: string, entries: FoodEntry[]): Promise<void> {
+async function saveLocalDay(date: string, entries: FoodEntry[]): Promise<void> {
   const log = await loadLog();
   log[date] = entries;
   await AsyncStorage.setItem(LOG_KEY, JSON.stringify(log));
+}
+
+/**
+ * A day's food. When signed in, your account is the source of truth: foods added on another device show up,
+ * foods deleted elsewhere go away, and foods added here before signing in (or offline) get uploaded.
+ */
+export async function loadDay(date: string): Promise<FoodEntry[]> {
+  const local = await loadLocalDay(date);
+  if (!(await signedIn())) return local;
+  try {
+    const { data, error } = await supabase!.from('food_entries').select('id, day, name, calories, at, meal').eq('day', date);
+    if (error) throw error;
+    const remote = (data as FoodRow[]).map<FoodEntry>((r) => ({ id: r.id, name: r.name, calories: r.calories, at: r.at, meal: (r.meal ?? undefined) as MealId | undefined, synced: true }));
+    const remoteIds = new Set(remote.map((r) => r.id));
+    const unsent = local.filter((f) => !f.synced && !remoteIds.has(f.id));
+    if (unsent.length) {
+      const up = await supabase!.from('food_entries').upsert(unsent.map((f) => toRow(date, f)));
+      if (up.error) throw up.error;
+    }
+    const merged = [...remote, ...unsent.map((f) => ({ ...f, synced: true }))].sort((a, b) => a.at.localeCompare(b.at));
+    await saveLocalDay(date, merged);
+    clearSyncError();
+    return merged;
+  } catch (e) {
+    reportSyncError(e);
+    return local;
+  }
+}
+
+/** Saves a day's food here, and to your account when signed in (removed entries are deleted there too). */
+export async function saveDay(date: string, entries: FoodEntry[]): Promise<void> {
+  const before = await loadLocalDay(date);
+  await saveLocalDay(date, entries);
+  if (!(await signedIn())) return;
+  try {
+    const ids = new Set(entries.map((f) => f.id));
+    const removed = before.filter((f) => !ids.has(f.id)).map((f) => f.id);
+    if (removed.length) {
+      const del = await supabase!.from('food_entries').delete().in('id', removed);
+      if (del.error) throw del.error;
+    }
+    if (entries.length) {
+      const up = await supabase!.from('food_entries').upsert(entries.map((f) => toRow(date, f)));
+      if (up.error) throw up.error;
+    }
+    await saveLocalDay(date, entries.map((f) => ({ ...f, synced: true })));
+    clearSyncError();
+  } catch (e) {
+    reportSyncError(e);
+  }
 }
