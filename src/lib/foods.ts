@@ -1,6 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
 // Foods you can search, and the serving sizes you can pick from.
+import { syncedLoad, syncedSave } from './cloudKv';
 // Common foods are built in (calories per 100 g from USDA FoodData Central, rounded),
 // so they show up instantly and work offline. Branded foods come from Open Food Facts.
 
@@ -277,18 +276,17 @@ export async function searchOnline(query: string, signal?: AbortSignal): Promise
 export type RecentFood = { name: string; brand?: string; serving: Serving; qty: number; servings?: Serving[] };
 const RECENT_KEY = 'wellness.recentFoods.v1';
 
+const sameFood = (a: RecentFood, b: RecentFood) => a.name === b.name && a.brand === b.brand;
+
 export async function loadRecent(): Promise<RecentFood[]> {
-  try {
-    const raw = await AsyncStorage.getItem(RECENT_KEY);
-    return raw ? (JSON.parse(raw) as RecentFood[]) : [];
-  } catch {
-    return [];
-  }
+  return syncedLoad<RecentFood[]>(RECENT_KEY, [], (local, remote) =>
+    [...local, ...remote.filter((r) => !local.some((l) => sameFood(l, r)))].slice(0, 30),
+  );
 }
 
 export async function rememberFood(r: RecentFood): Promise<void> {
-  const list = (await loadRecent()).filter((x) => !(x.name === r.name && x.brand === r.brand));
-  await AsyncStorage.setItem(RECENT_KEY, JSON.stringify([r, ...list].slice(0, 30)));
+  const list = (await loadRecent()).filter((x) => !sameFood(x, r));
+  await syncedSave(RECENT_KEY, [r, ...list].slice(0, 30));
 }
 
 export function recentToItem(r: RecentFood): FoodItem {
