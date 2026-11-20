@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { BarcodeScanner } from '../../components/BarcodeScanner';
 import { card, colors, Screen } from '../../components/Screen';
@@ -7,6 +7,7 @@ import {
   ACTIVITY_LEVELS,
   calculatePlan,
   getActivity,
+  foodSyncError,
   loadDay,
   MEALS,
   mealOf,
@@ -21,6 +22,7 @@ import {
   type Sex,
 } from '../../lib/nutrition';
 import { newId } from '../../lib/reminders';
+import { useApp } from '../../lib/store';
 
 export default function CaloriesScreen() {
   const [profile, setProfile] = useState<CalorieProfile | null | undefined>(undefined);
@@ -28,18 +30,21 @@ export default function CaloriesScreen() {
   const [day, setDay] = useState(todayKey());
   const [foods, setFoods] = useState<FoodEntry[]>([]);
   const [scanMeal, setScanMeal] = useState<MealId | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const { userEmail } = useApp();
 
-  useEffect(() => {
-    loadProfile().then(setProfile);
-  }, []);
-
+  // Reload on every visit (and after signing in) so foods added on another device show up.
   // A new day starts with an empty bar.
   useFocusEffect(
     useCallback(() => {
       const today = todayKey();
       setDay(today);
-      loadDay(today).then(setFoods);
-    }, []),
+      loadProfile().then(setProfile);
+      loadDay(today).then((f) => {
+        setFoods(f);
+        setSyncError(foodSyncError);
+      });
+    }, [userEmail]),
   );
 
   if (profile === undefined) return <Screen title="Cal Counter">{null}</Screen>;
@@ -67,10 +72,16 @@ export default function CaloriesScreen() {
   const updateFoods = async (next: FoodEntry[]) => {
     setFoods(next);
     await saveDay(day, next);
+    setSyncError(foodSyncError);
   };
 
   return (
     <Screen title="Cal Counter" subtitle="Today" pinned={<CalorieBar eaten={eaten} goal={plan.dailyCalories} />}>
+      {syncError ? (
+        <View style={[card.box, { backgroundColor: '#FBE3DF' }]}>
+          <Text style={{ color: '#8A2B20', fontSize: 14, fontWeight: '600' }}>{syncError}</Text>
+        </View>
+      ) : null}
       {MEALS.map((m) => (
         <MealSection
           key={m.id}
