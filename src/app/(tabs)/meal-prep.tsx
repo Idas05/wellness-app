@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { EatOut } from '../../components/EatOut';
+import { SyncNotice } from '../../components/SyncNotice';
 import { card, colors, Screen } from '../../components/Screen';
 import { macroGoals, sumMacros } from '../../lib/macros';
 import type { RestaurantMeal } from '../../lib/restaurants';
@@ -102,7 +103,7 @@ export default function MealPrepScreen() {
   const logIt = async (s: Suggestion) => {
     const day = todayKey();
     const current = await loadDay(day);
-    const entry: FoodEntry = { id: newId(), name: `${s.recipe.name} · 1 serving`, calories: s.calories, protein: Math.round(s.recipe.protein * s.portion), at: new Date().toISOString(), meal };
+    const entry: FoodEntry = { id: newId(), name: `${s.recipe.name} · 1 serving`, calories: s.calories, protein: Math.round(s.recipe.protein * s.portion), carbs: Math.round(s.recipe.carbs * s.portion), fat: Math.round(s.recipe.fat * s.portion), at: new Date().toISOString(), meal };
     // The log updates, but the suggestions stay put until you come back, so the ✓ doesn't vanish.
     await saveDay(day, [...current, entry]);
     setLogged(s.recipe.id);
@@ -140,6 +141,7 @@ export default function MealPrepScreen() {
 
   return (
     <Screen title="Meal Prep" subtitle={mode === 'home' ? 'Recipes that fit your calories and diet' : 'Restaurant meals that fit your day'}>
+      <SyncNotice />
       <View style={styles.modes}>
         {(['home', 'out'] as const).map((m) => (
           <Pressable key={m} onPress={() => setMode(m)} style={[styles.mode, mode === m && styles.modeOn]} accessibilityRole="tab" accessibilityState={{ selected: mode === m }}>
@@ -225,7 +227,8 @@ function RecipeCard({ s, certified, mealLabel, logged, onLog }: { s: Suggestion;
     <View style={card.box}>
       <Text style={styles.recipeName}>{r.name}</Text>
       <Text style={styles.meta}>
-        {s.calories.toLocaleString()} cal · {Math.round(r.protein * s.portion)} g protein · {r.mins} min
+        {s.calories.toLocaleString()} cal · {Math.round(r.protein * s.portion)} g protein · {Math.round(r.carbs * s.portion)} g carbs ·{' '}
+        {Math.round(r.fat * s.portion)} g fat · {r.mins} min
       </Text>
       <Text style={styles.portion}>Makes 1 serving, sized to your target</Text>
       {certified && r.meats.some((m) => m !== 'fish' && m !== 'shellfish') ? <Text style={styles.portion}>Use {certified}-certified {r.meats[0]}.</Text> : null}

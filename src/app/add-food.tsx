@@ -6,15 +6,15 @@ import { FoodDetailSheet, type PickedFood } from '../components/FoodDetailSheet'
 import { FoodRow, FoodSearch } from '../components/FoodSearch';
 import { card, colors, Screen } from '../components/Screen';
 import { displayName, loadRecent, recentToItem, rememberFood, type FoodItem, type RecentFood } from '../lib/foods';
-import { roundMacros, type Macros } from '../lib/macros';
+import { roundMacros, scaleMacros, type Macros } from '../lib/macros';
 import { loadDay, MEALS, saveDay, todayKey, type MealId } from '../lib/nutrition';
-import { loadRecipes, perServing, type Recipe } from '../lib/recipes';
+import { loadRecipes, macrosPerServing, perServing, type Recipe } from '../lib/recipes';
 import { newId } from '../lib/reminders';
 
 const isMeal = (m: unknown): m is MealId => MEALS.some((x) => x.id === m);
 
 function recipeItem(r: Recipe): FoodItem {
-  return { id: `recipe-${r.id}`, name: r.name, source: 'recipe', servings: [{ label: '1 serving', cal: perServing(r) }] };
+  return { id: `recipe-${r.id}`, name: r.name, source: 'recipe', servings: [{ label: '1 serving', cal: perServing(r), m: macrosPerServing(r) }] };
 }
 
 export default function AddFoodScreen() {
@@ -105,7 +105,7 @@ export default function AddFoodScreen() {
                     return (
                       <FoodRow
                         key={`${r.brand ?? ''}${r.name}`}
-                        food={{ ...item, servings: [{ label: `${r.qty === 1 ? '' : `${+r.qty.toFixed(2)} × `}${r.serving.label}`, cal: r.serving.cal * r.qty }, ...item.servings] }}
+                        food={{ ...item, servings: [{ label: `${r.qty === 1 ? '' : `${+r.qty.toFixed(2)} × `}${r.serving.label}`, cal: r.serving.cal * r.qty, m: r.serving.m && scaleMacros(r.serving.m, r.qty) }, ...item.servings] }}
                         first={i === 0}
                         onPress={() => setPicked(item)}
                       />

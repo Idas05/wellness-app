@@ -20,6 +20,14 @@ export async function requestPermission(): Promise<boolean> {
   return asked.granted;
 }
 
+export async function checkPermission(): Promise<boolean | null> {
+  const current = await Notifications.getPermissionsAsync();
+  return current.granted ? true : current.canAskAgain ? null : false;
+}
+
+/** iPhone keeps at most 64 scheduled notifications per app; anything past that never fires. */
+export const NOTIFICATION_LIMIT = 64;
+
 export async function cancelReminder(reminder: Reminder): Promise<void> {
   for (const id of reminder.notificationIds ?? []) {
     await Notifications.cancelScheduledNotificationAsync(id).catch(() => {});

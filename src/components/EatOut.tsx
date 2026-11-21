@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { DietPrefs } from '../lib/mealPrep';
-import { pickRestaurantMeals, PLACES, type RestaurantMeal } from '../lib/restaurants';
+import { pickRestaurantMeals, PLACE_SITES, PLACES, type RestaurantMeal } from '../lib/restaurants';
 import { MacroLine } from './MacroLine';
 import { card, colors } from './Screen';
 
@@ -85,9 +85,11 @@ export function EatOut({
             <View key={sec.place} style={styles.section}>
               <View style={styles.sectionHead}>
                 <Text style={styles.sectionTitle}>{sec.place}</Text>
-                <Text style={styles.muted}>
-                  {sec.meals.length} meal{sec.meals.length === 1 ? '' : 's'}
-                </Text>
+                {PLACE_SITES[sec.place] ? (
+                  <Pressable onPress={() => Linking.openURL(PLACE_SITES[sec.place])} accessibilityRole="link" hitSlop={8}>
+                    <Text style={styles.siteLink}>Check nutrition ›</Text>
+                  </Pressable>
+                ) : null}
               </View>
               {shown.map((m) => {
                 const done = logged.includes(m.id);
@@ -130,7 +132,8 @@ export function EatOut({
       )}
 
       <Text style={[styles.muted, { textAlign: 'center', marginTop: 6 }]}>
-        Numbers are approximate, from each chain's published nutrition info. Check the restaurant's app for exact numbers.
+        Numbers are estimates based on each chain's published nutrition info, and menus change. Tap "Check nutrition" for the exact
+        numbers before you count on them.
       </Text>
     </>
   );
@@ -148,6 +151,7 @@ const styles = StyleSheet.create({
   placeText: { fontSize: 13, fontWeight: '600', color: colors.ink },
   section: { marginBottom: 8 },
   sectionHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8, paddingHorizontal: 2 },
+  siteLink: { fontSize: 13, fontWeight: '700', color: colors.link },
   sectionTitle: { fontSize: 20, fontWeight: '800', color: colors.link },
   name: { fontSize: 17, fontWeight: '800', color: colors.ink },
   order: { fontSize: 13, color: colors.muted, marginTop: 3 },

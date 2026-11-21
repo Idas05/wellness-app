@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { BarcodeScanner } from '../../components/BarcodeScanner';
+import { SyncNotice } from '../../components/SyncNotice';
 import { MACRO_COLORS, MACRO_LABELS } from '../../components/MacroLine';
 import { card, colors, Screen } from '../../components/Screen';
 import {
@@ -81,6 +82,7 @@ export default function CaloriesScreen() {
 
   return (
     <Screen title="Cal Counter" subtitle="Today" pinned={<CalorieBar eaten={eaten} goal={plan.dailyCalories} macros={macrosEaten} macroGoal={macroGoal} />}>
+      <SyncNotice />
       {syncError ? (
         <View style={[card.box, { backgroundColor: '#2A1418' }]}>
           <Text style={{ color: '#FCA5A5', fontSize: 14, fontWeight: '600' }}>{syncError}</Text>
@@ -99,10 +101,21 @@ export default function CaloriesScreen() {
       <BarcodeScanner
         visible={scanMeal !== null}
         onClose={() => setScanMeal(null)}
-        onAdd={(name, calories, macros) => {
+        onAdd={async (name, calories, macros) => {
           const meal = scanMeal ?? 'snack';
           setScanMeal(null);
-          updateFoods([...foods, { id: newId(), name, calories, ...(macros ? roundMacros(macros) : {}), at: new Date().toISOString(), meal }]);
+          const entry: FoodEntry = { id: newId(), name, calories, ...(macros ? roundMacros(macros) : {}), at: new Date().toISOString(), meal };
+          // If the page was left open past midnight, start the new day instead of adding to yesterday.
+          const today = todayKey();
+          if (today !== day) {
+            const next = [...(await loadDay(today)), entry];
+            setDay(today);
+            setFoods(next);
+            await saveDay(today, next);
+            setSyncError(foodSyncError);
+            return;
+          }
+          updateFoods([...foods, entry]);
         }}
       />
 

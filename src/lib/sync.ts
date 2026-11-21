@@ -28,7 +28,7 @@ export async function fetchRemote(): Promise<Reminder[] | null> {
     .from('reminders')
     .select('id, category, title, hour, minute, days, enabled');
   if (error) throw error;
-  return (data as Row[]).map((row) => ({ ...row, category: normalizeCategory(row.category) }));
+  return (data as Row[]).map((row) => ({ ...row, category: normalizeCategory(row.category), synced: true }));
 }
 
 export async function pushRemote(r: Reminder): Promise<void> {
@@ -46,13 +46,13 @@ export async function deleteRemote(id: string): Promise<void> {
 }
 
 /**
- * Called after signing in: uploads reminders that only exist on this device,
- * then returns the full synced list (the account is the source of truth).
+ * Called when the app opens signed in: uploads reminders made on this device that never reached the account,
+ * and drops ones that were synced before but are gone from the account (deleted on another device).
  */
 export async function mergeAfterSignIn(local: Reminder[]): Promise<Reminder[]> {
   const remote = (await fetchRemote()) ?? [];
   const remoteIds = new Set(remote.map((r) => r.id));
-  const onlyLocal = local.filter((r) => !remoteIds.has(r.id));
-  for (const r of onlyLocal) await pushRemote(r);
-  return [...remote, ...onlyLocal];
+  const unsent = local.filter((r) => !remoteIds.has(r.id) && !r.synced);
+  for (const r of unsent) await pushRemote(r);
+  return [...remote, ...unsent.map((r) => ({ ...r, synced: true }))];
 }

@@ -6,6 +6,7 @@ import { FoodDetailSheet, type PickedFood } from '../components/FoodDetailSheet'
 import { FoodSearch } from '../components/FoodSearch';
 import { card, colors, Screen } from '../components/Screen';
 import { displayName, type FoodItem } from '../lib/foods';
+import { roundMacros } from '../lib/macros';
 import { deleteRecipe, loadRecipes, recipeTotal, saveRecipe, type Ingredient } from '../lib/recipes';
 import { newId } from '../lib/reminders';
 
@@ -39,7 +40,7 @@ export default function RecipeScreen() {
   const addIngredient = (p: PickedFood) => {
     setPicked(null);
     setSearching(false);
-    setIngredients((xs) => [...xs, { id: newId(), name: displayName(p.food), amount: p.amount, cal: p.calories }]);
+    setIngredients((xs) => [...xs, { id: newId(), name: displayName(p.food), amount: p.amount, cal: p.calories, ...(p.macros ? { m: roundMacros(p.macros) } : {}) }]);
   };
 
   const addManual = () => {

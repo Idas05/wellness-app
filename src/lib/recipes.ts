@@ -1,12 +1,17 @@
 import { syncedLoad, syncedSave } from './cloudKv';
+import { scaleMacros, sumMacros, type Macros } from './macros';
 
-export type Ingredient = { id: string; name: string; amount: string; cal: number };
+/** m: protein, carbs and fat, when the ingredient came from food search (typed-in ones only have calories). */
+export type Ingredient = { id: string; name: string; amount: string; cal: number; m?: Macros };
 export type Recipe = { id: string; name: string; servings: number; ingredients: Ingredient[]; updatedAt: string };
 
 const KEY = 'wellness.recipes.v1';
 
 export const recipeTotal = (r: Pick<Recipe, 'ingredients'>) => r.ingredients.reduce((s, i) => s + i.cal, 0);
 export const perServing = (r: Pick<Recipe, 'ingredients' | 'servings'>) => Math.round(recipeTotal(r) / Math.max(1, r.servings));
+/** Protein, carbs and fat in one serving, from the ingredients that have them. */
+export const macrosPerServing = (r: Pick<Recipe, 'ingredients' | 'servings'>): Macros | undefined =>
+  r.ingredients.some((i) => i.m) ? scaleMacros(sumMacros(r.ingredients.map((i) => i.m ?? {})), 1 / Math.max(1, r.servings)) : undefined;
 
 /** Both sides' recipes; when the same one was edited on both, the newer edit wins. */
 function mergeRecipes(local: Recipe[], remote: Recipe[]): Recipe[] {

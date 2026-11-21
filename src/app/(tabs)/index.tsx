@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { ReminderEditor } from '../../components/ReminderEditor';
 import { CATEGORIES, type CategoryId } from '../../lib/categories';
-import { formatDays, formatTime, type Reminder } from '../../lib/reminders';
+import { NOTIFICATION_LIMIT } from '../../lib/notify';
+import { formatDays, formatTime, notificationsNeeded, type Reminder } from '../../lib/reminders';
 import { Screen } from '../../components/Screen';
 import { useApp } from '../../lib/store';
-import { supabase } from '../../lib/supabase';
 
 type Filter = CategoryId | 'all';
 
 export default function RemindersScreen() {
-  const { reminders, permission, syncError, upsertReminder, removeReminder, userEmail, setAuthOpen } = useApp();
+  const { reminders, permission, syncError, upsertReminder, removeReminder, userEmail, setAuthOpen, signOut, askPermission } = useApp();
   const [filter, setFilter] = useState<Filter>('all');
   const [editing, setEditing] = useState<Reminder | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -24,6 +24,19 @@ export default function RemindersScreen() {
     setEditorOpen(false);
     await removeReminder(r);
   };
+
+  const confirmSignOut = () => {
+    const msg = 'Your data stays in your account and comes back when you sign in again. It will be removed from this device.';
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Sign out?\n\n${msg}`)) signOut();
+    } else {
+      Alert.alert('Sign out?', msg, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign out', style: 'destructive', onPress: () => signOut() },
+      ]);
+    }
+  };
+  const needed = notificationsNeeded(reminders);
 
   const toggle = (r: Reminder) => upsert({ ...r, enabled: !r.enabled });
 
@@ -65,7 +78,7 @@ export default function RemindersScreen() {
           <Text style={styles.accountText} numberOfLines={1}>
             {userEmail ? `Signed in as ${userEmail}` : 'Sign in to sync your phone and the website'}
           </Text>
-          <Pressable onPress={() => (userEmail ? supabase?.auth.signOut() : setAuthOpen(true))}>
+          <Pressable onPress={() => (userEmail ? confirmSignOut() : setAuthOpen(true))}>
             <Text style={styles.accountLink}>{userEmail ? 'Sign out' : 'Sign in'}</Text>
           </Pressable>
         </View>
@@ -76,6 +89,19 @@ export default function RemindersScreen() {
               {Platform.OS === 'web'
                 ? 'Allow notifications for this site in your browser to get reminders.'
                 : 'Turn them on in Settings › Notifications to get reminders.'}
+            </Text>
+          </View>
+        )}
+        {permission === null && (
+          <Pressable onPress={askPermission} style={styles.permButton} accessibilityRole="button">
+            <Text style={styles.permText}>🔔 Turn on notifications for reminders</Text>
+          </Pressable>
+        )}
+        {needed > NOTIFICATION_LIMIT && (
+          <View style={styles.banner}>
+            <Text style={styles.bannerText}>
+              iPhone only allows {NOTIFICATION_LIMIT} scheduled notifications per app, and these reminders need {needed}. Some won't go off. Reminders set
+              for every day count as one, so switch some to "Every day" or turn a few off.
             </Text>
           </View>
         )}
@@ -162,6 +188,8 @@ const styles = StyleSheet.create({
   },
   accountText: { flex: 1, color: '#EEF2FF', fontSize: 14 },
   accountLink: { color: '#60A5FA', fontSize: 14, fontWeight: '700' },
+  permButton: { backgroundColor: '#3B82F6', borderRadius: 12, padding: 12, marginBottom: 12, alignItems: 'center' },
+  permText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   banner: { backgroundColor: '#2A1418', borderRadius: 12, padding: 12, marginBottom: 12 },
   bannerText: { color: '#FCA5A5', fontSize: 14 },
   hint: { color: '#8C98B3', fontSize: 13, marginBottom: 8 },
