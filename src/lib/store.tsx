@@ -1,6 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState, Platform } from 'react-native';
-import { cancelReminder, requestPermission, rescheduleAll, scheduleReminder, startWebChecker } from './notify';
+import { cancelReminder, checkPermission, requestPermission, rescheduleAll, scheduleReminder, startWebChecker } from './notify';
 import { loadReminders, saveReminders, type Reminder } from './reminders';
 import { supabase } from './supabase';
 import { fetchNights, type SleepNight } from './sleep';
@@ -18,6 +19,8 @@ type AppState_ = {
   sleep: SleepNight[];
   sleepError: string | null;
   refreshSleep: () => Promise<void>;
+  signOut: () => Promise<void>;
+  askPermission: () => Promise<void>;
 };
 
 const Ctx = createContext<AppState_ | null>(null);
@@ -78,7 +81,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let signedIn = false;
     const ready = loadReminders().then(persist);
-    requestPermission().then(setPermission).catch(() => setPermission(false));
+    // Browsers only show the permission prompt after a tap, so the website checks here and asks from a button.
+    (Platform.OS === 'web' ? checkPermission() : requestPermission()).then(setPermission).catch(() => setPermission(false));
     const stopWeb = startWebChecker(() => latest.current);
 
     const sub = supabase?.auth.onAuthStateChange((event, session) => {
@@ -123,7 +127,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const list = latest.current;
     const exists = list.some((x) => x.id === r.id);
     await persist(exists ? list.map((x) => (x.id === r.id ? saved : x)) : [...list, saved]);
-    if (userEmail) pushRemote(saved).catch((e) => setSyncError(message(e)));
+    if (!userEmail) return;
+    try {
+      await pushRemote(saved);
+      await persist(latest.current.map((x) => (x.id === saved.id ? { ...x, synced: true } : x)));
+    } catch (e) {
+      setSyncError(message(e));
+    }
+  };
+
+  /** Signs out and clears this device, so the next person to sign in here doesn't get (or upload) your data. */
+  const signOut = async () => {
+    await rescheduleAll([]).catch(() => []);
+    await supabase?.auth.signOut();
+    const keys = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith('wellness.'));
+    await AsyncStorage.multiRemove(keys);
+    setReminders([]);
+    latest.current = [];
+    setSyncError(null);
+  };
+
+  const askPermission = async () => {
+    setPermission(await requestPermission().catch(() => false));
   };
 
   const removeReminder = async (r: Reminder) => {
@@ -146,6 +171,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         sleep,
         sleepError,
         refreshSleep,
+        signOut,
+        askPermission,
       }}
     >
       {children}

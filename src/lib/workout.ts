@@ -18,6 +18,7 @@ export type WorkoutPlan = {
   repStyle: string;
   rest: string;
   cardioMinutes: number;
+  daysPerWeek: number;
   days: WorkoutDay[]; // Sunday first, so days[new Date().getDay()] is today
 };
 
@@ -49,7 +50,7 @@ const CARDIO = [
   { what: 'StairMaster', setting: 'A steady level you can keep the whole time' },
 ];
 
-// Ishan's own split. Every set goes to failure.
+// Ishan's own split. Every set goes to failure (newer lifters stop a rep or two short).
 type Move = { name: string; sets: string; note?: string };
 
 const PUSH_A: Move[] = [
@@ -111,6 +112,17 @@ const WEEK: { title: string; focus: string; moves: Move[] | null }[] = [
   { title: 'Pull', focus: 'Pull B: back, rear shoulders, biceps', moves: PULL_B },
   { title: 'Legs', focus: 'Legs B: hamstrings, glutes, calves, core', moves: LEGS_B },
 ];
+// Newer lifters (no or light activity) start with each workout once a week, Mon/Wed/Fri, and stop a rep or two short of failure.
+const BEGINNER_WEEK: typeof WEEK = [
+  WEEK[0],
+  WEEK[1],
+  { title: 'Rest', focus: 'Recover: an easy walk and some stretching', moves: null },
+  WEEK[2],
+  { title: 'Rest', focus: 'Recover: an easy walk and some stretching', moves: null },
+  WEEK[3],
+  { title: 'Rest', focus: 'Recover: an easy walk and some stretching', moves: null },
+];
+
 const SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const CARDIO_HOW: Record<Goal, string> = {
@@ -125,8 +137,12 @@ export function buildWorkoutPlan(p: CalorieProfile): WorkoutPlan {
   const style = STYLE[goal];
   const minutes = cardioMinutes(goal, poundsToGo);
 
+  const beginner = p.activity === 'none' || p.activity === 'light';
+  const week = beginner ? BEGINNER_WEEK : WEEK;
+  const effort = beginner ? 'Stop with 1–2 reps left' : 'To failure';
+
   let lift = 0;
-  const days = WEEK.map((d, weekday): WorkoutDay => {
+  const days = week.map((d, weekday): WorkoutDay => {
     if (!d.moves) return { weekday, short: SHORT[weekday], title: d.title, focus: d.focus, exercises: [], cardio: null };
     const c = CARDIO[lift++ % CARDIO.length];
     return {
@@ -134,7 +150,7 @@ export function buildWorkoutPlan(p: CalorieProfile): WorkoutPlan {
       short: SHORT[weekday],
       title: d.title,
       focus: d.focus,
-      exercises: d.moves.map((m) => ({ name: m.name, sets: m.sets, note: m.note ?? 'To failure' })),
+      exercises: d.moves.map((m) => ({ name: m.name, sets: m.sets, note: m.note ?? effort })),
       cardio: { minutes, what: c.what, setting: c.setting, how: CARDIO_HOW[goal] },
     };
   });
@@ -146,7 +162,16 @@ export function buildWorkoutPlan(p: CalorieProfile): WorkoutPlan {
         ? `Built to gain ${poundsToGo} lb, from ${p.weightLb} to ${p.goalWeightLb} lb, mostly as muscle.`
         : `Built to stay at ${p.weightLb} lb and get stronger.`;
 
-  return { goal, poundsToGo, summary, repStyle: 'Every set to failure', rest: style.rest, cardioMinutes: minutes, days };
+  return {
+    goal,
+    poundsToGo,
+    summary,
+    repStyle: beginner ? 'Stop each set with 1–2 reps left in the tank' : 'Every set to failure',
+    rest: style.rest,
+    cardioMinutes: minutes,
+    daysPerWeek: lift,
+    days,
+  };
 }
 
 /** How many sets a prescription like "3 × 12–15" asks for. */

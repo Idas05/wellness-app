@@ -13,6 +13,15 @@ const STAGES = [
   { key: 'awake_min', label: 'Awake', color: '#F29E6D' },
 ] as const;
 
+/** "Last night" when the newest data is from this morning, otherwise the date, so old data doesn't look current. */
+function lastLabel(n: SleepNight) {
+  const [y, m, d] = n.night.split('-').map(Number);
+  const woke = new Date(y, m - 1, d);
+  const today = new Date();
+  if (woke.toDateString() === today.toDateString()) return 'Last night';
+  return `Night before ${woke.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}`;
+}
+
 function nightLabel(n: SleepNight) {
   // n.night is YYYY-MM-DD; build a local date so the weekday is right.
   const [y, m, d] = n.night.split('-').map(Number);
@@ -74,7 +83,7 @@ export default function SleepScreen() {
           </View>
 
           <View style={card.box}>
-            <Text style={card.heading}>Last night</Text>
+            <Text style={card.heading}>{lastLabel(last)}</Text>
             <View style={styles.statsRow}>
               <Stat label="Asleep" value={formatMinutes(last.asleep_min)} />
               <Stat label="Bedtime" value={formatClock(last.bedtime)} />

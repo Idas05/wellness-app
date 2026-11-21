@@ -110,34 +110,51 @@ async function loadLocalProfile(): Promise<CalorieProfile | null> {
   }
 }
 
-/** Your goal, from your account when signed in (so phone and web match), else from this device. */
+const PROFILE_STAMP = `${PROFILE_KEY}.changedAt`;
+
+/**
+ * Your goal, from your account when signed in (so phone and web match), else from this device.
+ * A change made here while offline is newer than the account's copy, so it gets uploaded instead of overwritten.
+ */
 export async function loadProfile(): Promise<CalorieProfile | null> {
   const local = await loadLocalProfile();
   if (!(await signedIn())) return local;
   try {
-    const { data, error } = await supabase!.from('calorie_profiles').select('profile').maybeSingle();
+    const { data, error } = await supabase!.from('calorie_profiles').select('profile, updated_at').maybeSingle();
     if (error) throw error;
+    const localAt = await AsyncStorage.getItem(PROFILE_STAMP);
     if (data?.profile) {
-      await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(data.profile));
+      if (local && localAt && new Date(localAt).getTime() > new Date(data.updated_at).getTime()) {
+        await pushProfile(local, localAt);
+        return local;
+      }
+      await AsyncStorage.multiSet([
+        [PROFILE_KEY, JSON.stringify(data.profile)],
+        [PROFILE_STAMP, data.updated_at],
+      ]);
       return data.profile as CalorieProfile;
     }
-    if (local) await pushProfile(local);
+    if (local) await pushProfile(local, localAt ?? new Date().toISOString());
   } catch (e) {
     reportSyncError(e);
   }
   return local;
 }
 
-async function pushProfile(p: CalorieProfile) {
-  const { error } = await supabase!.from('calorie_profiles').upsert({ profile: p, updated_at: new Date().toISOString() });
+async function pushProfile(p: CalorieProfile, at: string) {
+  const { error } = await supabase!.from('calorie_profiles').upsert({ profile: p, updated_at: at });
   if (error) throw error;
 }
 
 export async function saveProfile(p: CalorieProfile): Promise<void> {
-  await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+  const at = new Date().toISOString();
+  await AsyncStorage.multiSet([
+    [PROFILE_KEY, JSON.stringify(p)],
+    [PROFILE_STAMP, at],
+  ]);
   if (!(await signedIn())) return;
   try {
-    await pushProfile(p);
+    await pushProfile(p, at);
   } catch (e) {
     reportSyncError(e);
   }

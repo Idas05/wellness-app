@@ -3,12 +3,20 @@
 import { getCategory } from './categories';
 import type { Reminder } from './reminders';
 
+export const NOTIFICATION_LIMIT = Infinity;
+
 const supported = () => typeof window !== 'undefined' && 'Notification' in window;
 
 export async function requestPermission(): Promise<boolean> {
   if (!supported()) return false;
   if (Notification.permission === 'granted') return true;
   return (await Notification.requestPermission()) === 'granted';
+}
+
+/** true when allowed, false when blocked, null when the browser hasn't asked yet. */
+export async function checkPermission(): Promise<boolean | null> {
+  if (!supported()) return false;
+  return Notification.permission === 'granted' ? true : Notification.permission === 'denied' ? false : null;
 }
 
 export async function cancelReminder(_reminder: Reminder): Promise<void> {}

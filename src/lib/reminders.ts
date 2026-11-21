@@ -10,6 +10,8 @@ export type Reminder = {
   days: number[]; // 1 = Sunday ... 7 = Saturday
   enabled: boolean;
   notificationIds?: string[]; // scheduled notifications on the phone
+  /** Saved to your account at least once, so if it's missing there later it was deleted on another device. */
+  synced?: boolean;
 };
 
 export const ALL_DAYS = [1, 2, 3, 4, 5, 6, 7];
@@ -47,4 +49,9 @@ export function formatDays(days: number[]): string {
   if (sorted.join() === '1,7') return 'Weekends';
   const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   return sorted.map((d) => names[d - 1]).join(', ');
+}
+
+/** How many phone notifications these reminders need: one for an every-day reminder, else one per day. */
+export function notificationsNeeded(reminders: Reminder[]): number {
+  return reminders.filter((r) => r.enabled && r.days.length).reduce((n, r) => n + (r.days.length === 7 ? 1 : r.days.length), 0);
 }

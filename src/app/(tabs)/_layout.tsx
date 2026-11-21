@@ -36,10 +36,13 @@ function PillTabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
               accessibilityLabel={tab.label}
               style={[styles.item, focused && styles.itemActive]}
             >
-              <Ionicons name={focused ? tab.iconActive : tab.icon} size={22} color={focused ? '#fff' : '#8C98B3'} />
-              <Text style={[styles.label, focused && styles.labelActive]} numberOfLines={2}>
-                {tab.label}
-              </Text>
+              <Ionicons name={focused ? tab.iconActive : tab.icon} size={focused ? 20 : 23} color={focused ? '#fff' : '#8C98B3'} />
+              {/* Only the open tab shows its name, which keeps the bar clean and leaves room for more tabs. */}
+              {focused ? (
+                <Text style={styles.label} numberOfLines={1}>
+                  {tab.label}
+                </Text>
+              ) : null}
             </Pressable>
           );
         })}
@@ -81,8 +84,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 10,
   },
-  item: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 8, paddingBottom: 6, borderRadius: 999, gap: 2 },
-  itemActive: { backgroundColor: '#3B82F6' },
-  label: { color: '#8C98B3', fontSize: 9.5, fontWeight: '600', textAlign: 'center', lineHeight: 11.5, letterSpacing: -0.1 },
-  labelActive: { color: '#fff' },
+  item: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center', height: 48, borderRadius: 999 },
+  itemActive: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', flexDirection: 'row', gap: 6, paddingHorizontal: 14, backgroundColor: '#3B82F6' },
+  label: { color: '#fff', fontSize: 13, fontWeight: '700' },
 });

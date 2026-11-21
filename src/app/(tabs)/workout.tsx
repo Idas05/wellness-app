@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { card, colors, Screen } from '../../components/Screen';
+import { SyncNotice } from '../../components/SyncNotice';
 import { loadProfile, todayKey, type CalorieProfile } from '../../lib/nutrition';
 import {
   buildWorkoutPlan,
@@ -86,11 +87,12 @@ export default function WorkoutScreen() {
 
   return (
     <Screen title="Workout" subtitle="Push, pull, legs with cardio after">
+      <SyncNotice />
       <View style={card.box}>
         <Text style={card.heading}>Your plan</Text>
         <Text style={styles.body}>{plan.summary}</Text>
         <Text style={styles.small}>
-          6 days a week. {plan.repStyle}. Rest {plan.rest} between sets. {plan.cardioMinutes} minutes of cardio after
+          {plan.daysPerWeek} days a week. {plan.repStyle}. Rest {plan.rest} between sets. {plan.cardioMinutes} minutes of cardio after
           every workout.
         </Text>
       </View>
@@ -109,7 +111,7 @@ export default function WorkoutScreen() {
             >
               <Text style={[styles.dayShort, on && styles.onText]}>{d.short}</Text>
               <Text style={[styles.dayTitle, on && styles.onText]}>{d.title}</Text>
-              {d.weekday === today ? <View style={[styles.dot, on && { backgroundColor: '#151D30' }]} /> : null}
+              {d.weekday === today ? <View style={[styles.dot, on && { backgroundColor: '#fff' }]} /> : null}
             </Pressable>
           );
         })}

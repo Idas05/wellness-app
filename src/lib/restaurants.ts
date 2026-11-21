@@ -92,6 +92,19 @@ export const RESTAURANT_MEALS: RestaurantMeal[] = ROWS.map(([place, name, order,
 
 export const PLACES = [...new Set(RESTAURANT_MEALS.map((m) => m.place))];
 
+/** Each chain's website, where its menu and nutrition info live, so you can check the exact numbers. */
+export const PLACE_SITES: Record<string, string> = {
+  Chipotle: 'https://www.chipotle.com',
+  'Chick-fil-A': 'https://www.chick-fil-a.com',
+  Subway: 'https://www.subway.com',
+  "McDonald's": 'https://www.mcdonalds.com',
+  'Taco Bell': 'https://www.tacobell.com',
+  'Panda Express': 'https://www.pandaexpress.com',
+  Starbucks: 'https://www.starbucks.com',
+  "Wendy's": 'https://www.wendys.com',
+  'In-N-Out': 'https://www.in-n-out.com',
+};
+
 const LAND = ['chicken', 'turkey', 'beef', 'pork'];
 
 /** Diet answers from Meal Prep. Allergies aren't checked here: restaurant kitchens share equipment, so the app says to ask. */

@@ -9,6 +9,9 @@ import { supabase } from './supabase';
  */
 
 const stampKey = (key: string) => `${key}.changedAt`;
+/** The account's version this device last matched, to tell "changed here", "changed there" and "changed on both" apart. */
+const syncedKey = (key: string) => `${key}.syncedAt`;
+const ms = (iso: string | null) => (iso ? new Date(iso).getTime() : 0);
 
 export let cloudSyncError: string | null = null;
 
@@ -44,42 +47,53 @@ function report(e: unknown) {
   cloudSyncError = /user_data|schema cache/.test(msg) ? 'Run supabase/sync-everything.sql in Supabase once to sync this.' : msg;
 }
 
-export async function syncedLoad<T>(key: string, fallback: T, firstMerge: (local: T, remote: T) => T): Promise<T> {
+export async function syncedLoad<T>(key: string, fallback: T, merge: (local: T, remote: T) => T): Promise<T> {
   const local = await readLocal(key, fallback);
   if (!(await signedIn())) return local;
   try {
-    const localAt = await AsyncStorage.getItem(stampKey(key));
+    const [[, localAt], [, syncedAt]] = await AsyncStorage.multiGet([stampKey(key), syncedKey(key)]);
     const { data, error } = await supabase!.from('user_data').select('value, updated_at').eq('key', key).maybeSingle();
     if (error) throw error;
     cloudSyncError = null;
     const now = new Date().toISOString();
+    const markSynced = (at: string) => AsyncStorage.setItem(syncedKey(key), at);
+
     if (!data) {
       if (JSON.stringify(local) !== JSON.stringify(fallback)) {
         const at = localAt ?? now;
         await push(key, local, at);
         if (!localAt) await AsyncStorage.setItem(stampKey(key), at);
+        await markSynced(at);
       }
       return local;
     }
+
     const remote = data.value as T;
-    const remoteAt = new Date(data.updated_at).getTime();
-    if (!localAt) {
-      // First sync on this device: keep both sides.
-      const merged = firstMerge(local, remote);
+    const remoteAt = ms(data.updated_at);
+    const mine = ms(localAt);
+    // First sync on this device, or changed on both devices since they last matched: keep both sides.
+    const both = !!syncedAt && remoteAt > ms(syncedAt) && mine > ms(syncedAt);
+    if (!localAt || both) {
+      const merged = merge(local, remote);
       if (JSON.stringify(merged) !== JSON.stringify(remote)) {
         await push(key, merged, now);
         await writeLocal(key, merged, now);
+        await markSynced(now);
       } else {
         await writeLocal(key, merged, data.updated_at);
+        await markSynced(data.updated_at);
       }
       return merged;
     }
-    const mine = new Date(localAt).getTime();
     if (remoteAt > mine) {
       await writeLocal(key, remote, data.updated_at);
+      await markSynced(data.updated_at);
       return remote;
     }
-    if (mine > remoteAt) await push(key, local, localAt);
+    if (mine > remoteAt) {
+      await push(key, local, localAt!);
+      await markSynced(localAt!);
+    }
     return local;
   } catch (e) {
     report(e);
@@ -106,6 +120,7 @@ export async function syncedSave<T>(key: string, value: T): Promise<void> {
       if (!(await signedIn())) return;
       try {
         await push(key, value, at);
+        await AsyncStorage.setItem(syncedKey(key), at);
         cloudSyncError = null;
       } catch (e) {
         // The newer local stamp means the next load uploads it.
