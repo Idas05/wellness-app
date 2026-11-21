@@ -78,8 +78,12 @@ export type Budget = {
   logged: number;
   leftToday: number;
   target: number;
+  /** What recipes are sized to: the target, but at most ~1.6× the meal's share, since one plate can't hold a whole day. */
+  recipeTarget: number;
   light: boolean;
 };
+
+const MAX_PLATE = 1.6;
 
 /**
  * Calories this meal should come to: its share of the goal, plus whatever earlier meals didn't use before
@@ -110,6 +114,7 @@ export function mealBudget(daily: number, meal: MealId, loggedByMeal: Record<Mea
         logged,
         leftToday,
         target: Math.max(Math.round(raw), floor),
+        recipeTarget: Math.min(Math.max(Math.round(raw), floor), Math.round((share * MAX_PLATE) / 10) * 10),
         light: raw < floor,
       };
     }
@@ -177,32 +182,59 @@ export function shuffle<T>(xs: T[]): T[] {
 
 // ---- Not showing the same recipes every visit ----
 
-/** Recipe ids already shown for each meal, oldest first. Synced, so the phone and website don't repeat each other. */
-export type Seen = Partial<Record<MealId, string[]>>;
-const SEEN_KEY = 'wellness.mealPrepSeen.v1';
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** A recipe you logged stays out of Meal Prep for this long. */
+export const LOGGED_BREAK_DAYS = 7;
 
-export async function loadSeen(): Promise<Seen> {
-  return syncedLoad<Seen>(SEEN_KEY, {}, (local, remote) => {
-    const out: Seen = { ...remote };
-    for (const [m, ids] of Object.entries(local) as [MealId, string[]][]) out[m] = [...new Set([...(out[m] ?? []), ...ids])];
-    return out;
-  });
+/** When each recipe was last on screen (ms), across all meals. Synced, so the phone and website don't repeat each other. */
+export type Shown = Record<string, number>;
+const SHOWN_KEY = 'wellness.mealPrepShown.v2';
+/** When each recipe was last logged from Meal Prep (ms). Synced. */
+const LOGGED_KEY = 'wellness.mealPrepLogged.v1';
+
+/** Two devices' maps join by keeping the later time for each recipe, and old entries are dropped. */
+function mergeTimes(a: Record<string, number>, b: Record<string, number>, keepDays: number): Record<string, number> {
+  const cutoff = Date.now() - keepDays * DAY_MS;
+  const out: Record<string, number> = {};
+  for (const src of [a, b]) for (const [id, t] of Object.entries(src ?? {})) if (typeof t === 'number' && t > cutoff && t > (out[id] ?? 0)) out[id] = t;
+  return out;
 }
 
-/** Adds what's on screen to the seen list. Once every match has been seen, starts the list over from these. */
-export async function markSeen(meal: MealId, ids: string[], matchIds: string[]): Promise<void> {
-  const seen = await loadSeen();
-  let list = [...(seen[meal] ?? []).filter((id) => !ids.includes(id)), ...ids];
-  if (matchIds.every((id) => list.includes(id))) list = ids;
-  await syncedSave(SEEN_KEY, { ...seen, [meal]: list.slice(-200) });
+// Stamps made this session, kept in memory too, so two quick saves can't overwrite each other's stamps.
+let sessionShown: Shown = {};
+
+export async function loadSeen(): Promise<Shown> {
+  const saved = await syncedLoad<Shown>(SHOWN_KEY, {}, (local, remote) => mergeTimes(local, remote, 60));
+  return mergeTimes(saved, sessionShown, 60);
 }
 
-/** Recipes you haven't been shown yet come first, in a random mix; then the ones seen longest ago. */
-export function freshFirst(matches: Suggestion[], seenIds: string[] = []): Suggestion[] {
-  const rank = new Map(seenIds.map((id, i) => [id, i]));
-  const fresh = shuffle(matches.filter((m) => !rank.has(m.recipe.id)));
-  const old = matches.filter((m) => rank.has(m.recipe.id)).sort((a, b) => rank.get(a.recipe.id)! - rank.get(b.recipe.id)!);
-  return [...fresh, ...old];
+/** Stamps what's on screen now, so it goes to the back of the line for every meal. */
+export async function markSeen(ids: string[]): Promise<void> {
+  const now = Date.now();
+  sessionShown = mergeTimes(sessionShown, Object.fromEntries(ids.map((id) => [id, now])), 60);
+  await syncedSave(SHOWN_KEY, await loadSeen());
+}
+
+export async function loadLogged(): Promise<Record<string, number>> {
+  return syncedLoad<Record<string, number>>(LOGGED_KEY, {}, (local, remote) => mergeTimes(local, remote, LOGGED_BREAK_DAYS + 1));
+}
+
+export async function markLogged(id: string): Promise<void> {
+  const logged = await loadLogged();
+  await syncedSave(LOGGED_KEY, mergeTimes(logged, { [id]: Date.now() }, LOGGED_BREAK_DAYS + 1));
+}
+
+/** Recipe ids logged within the last week, from Meal Prep's own record plus food entries named after a recipe. */
+export function onBreak(logged: Record<string, number>, recentFoodNames: string[], all: LibraryRecipe[]): Set<string> {
+  const cutoff = Date.now() - LOGGED_BREAK_DAYS * DAY_MS;
+  const out = new Set(Object.entries(logged).filter(([, t]) => t > cutoff).map(([id]) => id));
+  for (const r of all) if (recentFoodNames.some((n) => n === r.name || n.startsWith(`${r.name} ·`))) out.add(r.id);
+  return out;
+}
+
+/** Never-shown recipes first, then the ones shown longest ago; ties in a random mix. What you saw last visit goes last. */
+export function freshFirst(matches: Suggestion[], shown: Shown = {}): Suggestion[] {
+  return shuffle(matches).sort((a, b) => (shown[a.recipe.id] ?? 0) - (shown[b.recipe.id] ?? 0));
 }
 
 // ---- Rewriting a recipe so your portion is one serving ----

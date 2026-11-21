@@ -254,6 +254,13 @@ async function loadLog(): Promise<Log> {
   }
 }
 
+/** Names of foods logged on this device in the last `days` days, today included. */
+export async function recentFoodNames(days: number): Promise<string[]> {
+  const log = await loadLog();
+  const from = todayKey(new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000));
+  return Object.entries(log).filter(([d]) => d >= from).flatMap(([, entries]) => entries.map((f) => f.name));
+}
+
 async function loadLocalDay(date: string): Promise<FoodEntry[]> {
   return (await loadLog())[date] ?? [];
 }
