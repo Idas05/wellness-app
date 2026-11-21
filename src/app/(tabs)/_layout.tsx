@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs, type BottomTabBarProps } from 'expo-router/js-tabs';
-import { LayoutAnimation, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -42,10 +42,8 @@ function PillTabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
           const focused = state.index === i;
           const onPress = () => {
             const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-            if (!focused && !event.defaultPrevented) {
-              LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'scaleXY'));
-              navigateToTab(route.key);
-            }
+            // No LayoutAnimation here: on iPhone it also animated the whole new screen, which made taps lag.
+            if (!focused && !event.defaultPrevented) navigateToTab(route.key);
           };
           return (
             <Pressable
