@@ -18,8 +18,12 @@ import {
   scaleIngredient,
   savePrefs,
   freshFirst,
+  loadLogged,
   loadSeen,
+  markLogged,
   markSeen,
+  onBreak,
+  LOGGED_BREAK_DAYS,
   shuffle,
   type AllergenId,
   type Budget,
@@ -27,7 +31,7 @@ import {
   type DietPrefs,
   type Suggestion,
 } from '../../lib/mealPrep';
-import { calculatePlan, loadDay, loadProfile, MEALS, mealOf, saveDay, todayKey, type CalorieProfile, type FoodEntry, type MealId } from '../../lib/nutrition';
+import { calculatePlan, loadDay, loadProfile, MEALS, mealOf, recentFoodNames, saveDay, todayKey, type CalorieProfile, type FoodEntry, type MealId } from '../../lib/nutrition';
 import { RECIPE_LIBRARY } from '../../lib/recipeLibrary';
 import { newId } from '../../lib/reminders';
 
@@ -84,14 +88,17 @@ export default function MealPrepScreen() {
   const noun = meal === 'snack' ? 'snack' : mealLabel.toLowerCase();
   const nounOf = (m: MealId) => (m === 'snack' ? 'snacks' : MEALS.find((x) => x.id === m)!.label.toLowerCase());
 
-  const matches = useMemo(() => (prefs ? matchRecipes(RECIPE_LIBRARY, meal, budget.target, prefs) : []), [prefs, meal, budget.target]);
+  const matches = useMemo(() => (prefs ? matchRecipes(RECIPE_LIBRARY, meal, budget.recipeTarget, prefs) : []), [prefs, meal, budget.recipeTarget]);
 
-  // Every visit, and whenever what we're matching against changes: recipes you haven't seen yet come first.
+  // Every visit, and whenever what we're matching against changes: recipes you logged this week are left out,
+  // and the rest come in order of how long ago you last saw them, so each visit opens on new ones.
   useEffect(() => {
     let live = true;
-    loadSeen().then((seen) => {
+    Promise.all([loadSeen(), loadLogged(), recentFoodNames(LOGGED_BREAK_DAYS)]).then(([seen, loggedAt, names]) => {
       if (!live) return;
-      setOrder(freshFirst(matches, seen[meal]));
+      const resting = onBreak(loggedAt, names, RECIPE_LIBRARY);
+      const pool = matches.filter((m) => !resting.has(m.recipe.id));
+      setOrder(freshFirst(pool.length ? pool : matches, seen));
       setPage(0);
       setLogged(null);
     });
@@ -108,8 +115,11 @@ export default function MealPrepScreen() {
   useEffect(() => {
     const ids = shownKey ? shownKey.split(',') : [];
     const matchIds = matches.map((m) => m.recipe.id);
-    // Skip the moment between switching meals and the new list arriving.
-    if (ids.length && ids.every((id) => matchIds.includes(id))) markSeen(meal, ids, matchIds);
+    // Skip the moment between switching meals and the new list arriving, and only count recipes that stayed
+    // on screen for a moment, so a list that's replaced while your food log loads doesn't use up fresh ones.
+    if (!ids.length || !ids.every((id) => matchIds.includes(id))) return;
+    const t = setTimeout(() => markSeen(ids), 1500);
+    return () => clearTimeout(t);
   }, [shownKey]);
 
   const refresh = () => {
@@ -131,6 +141,7 @@ export default function MealPrepScreen() {
     const entry: FoodEntry = { id: newId(), name: `${s.recipe.name} · 1 serving`, calories: s.calories, protein: Math.round(s.recipe.protein * s.portion), carbs: Math.round(s.recipe.carbs * s.portion), fat: Math.round(s.recipe.fat * s.portion), at: new Date().toISOString(), meal };
     // The log updates, but the suggestions stay put until you come back, so the ✓ doesn't vanish.
     await saveDay(day, [...current, entry]);
+    await markLogged(s.recipe.id);
     setLogged(s.recipe.id);
   };
 
@@ -200,6 +211,11 @@ export default function MealPrepScreen() {
         <Text style={styles.body}>
           {mealNote(budget, meal, noun, daily, nounOf)}
         </Text>
+        {budget.recipeTarget < budget.target ? (
+          <Text style={[styles.body, { marginTop: 6 }]}>
+            That's more than one plate, so these recipes are about {budget.recipeTarget.toLocaleString()} cal. Add a snack or a side for the rest.
+          </Text>
+        ) : null}
         {!profile ? (
           <Pressable onPress={() => router.navigate('/calories')} accessibilityRole="link" style={{ marginTop: 8 }}>
             <Text style={styles.link}>Using 2,000 cal a day. Set your goal in Cal Counter ›</Text>
@@ -216,7 +232,7 @@ export default function MealPrepScreen() {
       {shown.length === 0 ? (
         <View style={card.box}>
           <Text style={styles.body}>
-            No {noun} recipes match all of your restrictions at {budget.target.toLocaleString()} cal. Try another meal, or edit your restrictions.
+            No {noun} recipes match all of your restrictions at {budget.recipeTarget.toLocaleString()} cal. Try another meal, or edit your restrictions.
           </Text>
         </View>
       ) : (
