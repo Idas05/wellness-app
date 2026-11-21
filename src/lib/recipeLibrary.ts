@@ -1,5 +1,6 @@
 import type { AllergenId } from './mealPrep';
 import type { MealId } from './nutrition';
+import { MORE_RECIPES } from './recipeLibraryMore';
 
 type Meat = 'chicken' | 'turkey' | 'beef' | 'pork' | 'lamb' | 'fish' | 'shellfish';
 
@@ -31,7 +32,7 @@ const S: MealId[] = ['snack'];
  * Built-in recipes, one serving each, with calories worked out from standard nutrition values.
  * Tagged by meat and the nine major allergens so diets and allergies can be filtered reliably.
  */
-export const RECIPE_LIBRARY: LibraryRecipe[] = [
+const BASE_RECIPES: LibraryRecipe[] = [
   // ---- Breakfast ----
   {
     id: 'yogurt-parfait', name: 'Greek yogurt berry parfait', meals: B, cal: 330, protein: 25, carbs: 41, fat: 8, mins: 5, meats: [], contains: ['milk'], honey: true,
@@ -415,3 +416,6 @@ export const RECIPE_LIBRARY: LibraryRecipe[] = [
     ingredients: ['60 g ripe banana', '20 g rolled oats', '9 g raisins', 'Cinnamon'], steps: ['Mash and mix everything, form 4 small mounds.', 'Bake at 350 °F for 15 minutes.'],
   },
 ];
+
+/** The hand-written recipes above plus the generated ones in recipeLibraryMore.ts. */
+export const RECIPE_LIBRARY: LibraryRecipe[] = [...BASE_RECIPES, ...MORE_RECIPES];
