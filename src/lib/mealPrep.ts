@@ -46,25 +46,86 @@ export async function savePrefs(p: DietPrefs): Promise<void> {
 /** Rough share of the day's calories for each meal. */
 export const MEAL_SHARE: Record<MealId, number> = { breakfast: 0.25, lunch: 0.3, dinner: 0.35, snack: 0.1 };
 
+/** When each meal ends (24-hour clock). Calories a meal didn't use by then move to the next meal. */
+export const MEAL_CUTOFF: Record<MealId, number | null> = { breakfast: 11, lunch: 15, dinner: 23, snack: null };
+const MEAL_ORDER: MealId[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+const hourOf = (d: Date) => d.getHours() + d.getMinutes() / 60;
+
 /** The meal coming up, going by the clock. */
 export function mealNow(d = new Date()): MealId {
-  const h = d.getHours() + d.getMinutes() / 60;
-  if (h >= 4 && h < 10.5) return 'breakfast';
-  if (h >= 10.5 && h < 15) return 'lunch';
-  if (h >= 15 && h < 21) return 'dinner';
+  const h = hourOf(d);
+  if (h >= 4 && h < MEAL_CUTOFF.breakfast!) return 'breakfast';
+  if (h >= MEAL_CUTOFF.breakfast! && h < MEAL_CUTOFF.lunch!) return 'lunch';
+  if (h >= MEAL_CUTOFF.lunch! && h < MEAL_CUTOFF.dinner!) return 'dinner';
   return 'snack';
 }
 
-export type Budget = { share: number; logged: number; leftToday: number; target: number; light: boolean };
+/** "11 AM", "3 PM", "11 PM". */
+export function cutoffLabel(h: number): string {
+  return `${h % 12 || 12} ${h < 12 ? 'AM' : 'PM'}`;
+}
 
-/** Calories this meal should come to: its share of the goal, less what's already logged for it and never more than what's left today. */
-export function mealBudget(daily: number, meal: MealId, loggedForMeal: number, eatenToday: number): Budget {
-  const share = Math.round(daily * MEAL_SHARE[meal]);
+export type Budget = {
+  /** This meal's own share of the day. */
+  share: number;
+  /** Calories moved in from earlier meals that are over, and which meals they came from. */
+  carried: number;
+  carriedFrom: MealId[];
+  /** The meal's cutoff has passed: what it didn't use has moved on to `movedTo`. */
+  closed: boolean;
+  movedOut: number;
+  movedTo: MealId | null;
+  logged: number;
+  leftToday: number;
+  target: number;
+  light: boolean;
+};
+
+/**
+ * Calories this meal should come to: its share of the goal, plus whatever earlier meals didn't use before
+ * their cutoff, less what's already logged for it, and never more than what's left today.
+ */
+export function mealBudget(daily: number, meal: MealId, loggedByMeal: Record<MealId, number>, eatenToday: number, now = new Date()): Budget {
+  const h = hourOf(now);
   const leftToday = daily - eatenToday;
-  const raw = Math.min(share - loggedForMeal, leftToday);
-  // Below this there's no real meal left in the budget; suggest something light instead.
-  const floor = meal === 'snack' ? 100 : 200;
-  return { share, logged: loggedForMeal, leftToday, target: Math.max(Math.round(raw), floor), light: raw < floor };
+  let carried = 0;
+  let carriedFrom: MealId[] = [];
+  for (const [i, m] of MEAL_ORDER.entries()) {
+    const share = Math.round(daily * MEAL_SHARE[m]);
+    const logged = loggedByMeal[m] ?? 0;
+    const unused = share + carried - logged;
+    const cutoff = MEAL_CUTOFF[m];
+    const closed = cutoff != null && h >= cutoff && h >= 4;
+    if (m === meal) {
+      // Below this there's no real meal left in the budget; suggest something light instead.
+      const floor = meal === 'snack' ? 100 : 200;
+      const raw = closed ? 0 : Math.min(unused, leftToday);
+      return {
+        share,
+        carried,
+        carriedFrom,
+        closed,
+        movedOut: closed ? Math.max(0, Math.round(unused)) : 0,
+        movedTo: closed ? MEAL_ORDER[i + 1] : null,
+        logged,
+        leftToday,
+        target: Math.max(Math.round(raw), floor),
+        light: raw < floor,
+      };
+    }
+    if (!closed) {
+      carried = 0;
+      carriedFrom = [];
+    } else if (unused > 0) {
+      carried = unused;
+      carriedFrom = [...carriedFrom, m];
+    } else {
+      // Went over: nothing to pass on, and the next meal keeps its own share.
+      carried = 0;
+      carriedFrom = [];
+    }
+  }
+  throw new Error(`unknown meal ${meal}`);
 }
 
 // ---- Matching recipes ----

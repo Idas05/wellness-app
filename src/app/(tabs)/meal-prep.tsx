@@ -11,6 +11,8 @@ import {
   DIETS,
   loadPrefs,
   matchRecipes,
+  cutoffLabel,
+  MEAL_CUTOFF,
   mealBudget,
   mealNow,
   scaleIngredient,
@@ -20,6 +22,7 @@ import {
   markSeen,
   shuffle,
   type AllergenId,
+  type Budget,
   type DietId,
   type DietPrefs,
   type Suggestion,
@@ -29,6 +32,24 @@ import { RECIPE_LIBRARY } from '../../lib/recipeLibrary';
 import { newId } from '../../lib/reminders';
 
 const PAGE = 3;
+
+const cap = (t: string) => t[0].toUpperCase() + t.slice(1);
+const list = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+
+function mealNote(b: Budget, meal: MealId, noun: string, daily: number, nounOf: (m: MealId) => string): string {
+  if (b.closed) {
+    const ended = `${cap(noun)} ended at ${cutoffLabel(MEAL_CUTOFF[meal]!)}`;
+    return b.movedOut > 0 && b.movedTo
+      ? `${ended}, so the ${b.movedOut.toLocaleString()} cal it didn't use moved to ${nounOf(b.movedTo)}. These are light ideas if you still want something.`
+      : `${ended}. These are light ideas if you still want something.`;
+  }
+  const extra = b.carried > 0 ? `, plus ${Math.round(b.carried).toLocaleString()} left over from ${list(b.carriedFrom.map(nounOf))}` : '';
+  if (b.light) return `You've used up your ${noun} calories for today, so these are light ideas.`;
+  if (b.logged > 0) return `${cap(noun)} gets about ${b.share.toLocaleString()} of your ${daily.toLocaleString()} cal${extra}. You've already logged ${b.logged.toLocaleString()} for it, so this is what's left.`;
+  if (b.target < b.share + b.carried) return `${cap(noun)} would get about ${Math.round(b.share + b.carried).toLocaleString()} cal${extra ? ` (its ${b.share.toLocaleString()}${extra})` : ''}, but you only have ${b.leftToday.toLocaleString()} left today.`;
+  if (b.carried > 0) return `${cap(noun)} gets about ${b.share.toLocaleString()} of your ${daily.toLocaleString()} cal${extra}.`;
+  return `About ${Math.round((b.share / daily) * 100)}% of your ${daily.toLocaleString()} cal day. Nothing logged for ${noun} yet.`;
+}
 const DEFAULT_DAILY = 2000;
 
 export default function MealPrepScreen() {
@@ -46,6 +67,8 @@ export default function MealPrepScreen() {
   useFocusEffect(
     useCallback(() => {
       setVisit((v) => v + 1);
+      // Each visit opens on the meal the clock is at, so a meal that's over hands off to the next one.
+      setMeal(mealNow());
       loadPrefs().then(setPrefs);
       loadProfile().then(setProfile);
       loadDay(todayKey()).then(setFoods);
@@ -54,10 +77,12 @@ export default function MealPrepScreen() {
 
   const daily = profile ? calculatePlan(profile).dailyCalories : DEFAULT_DAILY;
   const eatenToday = foods.reduce((s, f) => s + f.calories, 0);
-  const loggedForMeal = foods.filter((f) => mealOf(f) === meal).reduce((s, f) => s + f.calories, 0);
-  const budget = mealBudget(daily, meal, loggedForMeal, eatenToday);
+  const loggedByMeal = { breakfast: 0, lunch: 0, dinner: 0, snack: 0 } as Record<MealId, number>;
+  for (const f of foods) loggedByMeal[mealOf(f)] += f.calories;
+  const budget = mealBudget(daily, meal, loggedByMeal, eatenToday);
   const mealLabel = MEALS.find((m) => m.id === meal)!.label;
   const noun = meal === 'snack' ? 'snack' : mealLabel.toLowerCase();
+  const nounOf = (m: MealId) => (m === 'snack' ? 'snacks' : MEALS.find((x) => x.id === m)!.label.toLowerCase());
 
   const matches = useMemo(() => (prefs ? matchRecipes(RECIPE_LIBRARY, meal, budget.target, prefs) : []), [prefs, meal, budget.target]);
 
@@ -173,13 +198,7 @@ export default function MealPrepScreen() {
         <Text style={card.heading}>{mealLabel} target</Text>
         <Text style={styles.big}>{budget.target.toLocaleString()} cal</Text>
         <Text style={styles.body}>
-          {budget.light
-            ? `You've used up your ${noun} calories for today, so these are light ideas.`
-            : budget.logged > 0
-              ? `${noun[0].toUpperCase() + noun.slice(1)} gets about ${budget.share.toLocaleString()} of your ${daily.toLocaleString()} cal. You've already logged ${budget.logged.toLocaleString()} for it, so this is what's left.`
-              : budget.target < budget.share
-                ? `${noun[0].toUpperCase() + noun.slice(1)} would get about ${budget.share.toLocaleString()} cal, but you only have ${budget.leftToday.toLocaleString()} left today.`
-                : `About ${Math.round((budget.share / daily) * 100)}% of your ${daily.toLocaleString()} cal day. Nothing logged for ${noun} yet.`}
+          {mealNote(budget, meal, noun, daily, nounOf)}
         </Text>
         {!profile ? (
           <Pressable onPress={() => router.navigate('/calories')} accessibilityRole="link" style={{ marginTop: 8 }}>
