@@ -34,7 +34,7 @@ export default function CaloriesScreen() {
   const [foods, setFoods] = useState<FoodEntry[]>([]);
   const [scanMeal, setScanMeal] = useState<MealId | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
-  const { userEmail } = useApp();
+  const { userEmail, syncTick } = useApp();
 
   // Reload on every visit (and after signing in) so foods added on another device show up.
   // A new day starts with an empty bar.
@@ -47,7 +47,7 @@ export default function CaloriesScreen() {
         setFoods(f);
         setSyncError(foodSyncError);
       });
-    }, [userEmail]),
+    }, [userEmail, syncTick]),
   );
 
   if (profile === undefined) return <Screen title="Cal Counter">{null}</Screen>;

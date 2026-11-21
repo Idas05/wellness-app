@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { EatOut } from '../../components/EatOut';
 import { SyncNotice } from '../../components/SyncNotice';
 import { card, colors, Screen } from '../../components/Screen';
+import { useApp } from '../../lib/store';
 import { macroGoals, sumMacros } from '../../lib/macros';
 import type { RestaurantMeal } from '../../lib/restaurants';
 import {
@@ -78,6 +79,15 @@ export default function MealPrepScreen() {
       loadDay(todayKey()).then(setFoods);
     }, []),
   );
+
+  // A change on the other device: refresh the numbers, but keep the recipes and meal you're looking at.
+  const { syncTick } = useApp();
+  useEffect(() => {
+    if (!syncTick) return;
+    loadPrefs().then(setPrefs);
+    loadProfile().then(setProfile);
+    loadDay(todayKey()).then(setFoods);
+  }, [syncTick]);
 
   const daily = profile ? calculatePlan(profile).dailyCalories : DEFAULT_DAILY;
   const eatenToday = foods.reduce((s, f) => s + f.calories, 0);
