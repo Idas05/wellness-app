@@ -1,7 +1,8 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { card, colors, Screen } from '../../components/Screen';
+import { useApp } from '../../lib/store';
 import { SyncNotice } from '../../components/SyncNotice';
 import { loadProfile, todayKey, type CalorieProfile } from '../../lib/nutrition';
 import {
@@ -40,7 +41,20 @@ export default function WorkoutScreen() {
     }, []),
   );
 
+  // A change on the other device. Skipped while you're typing a set, so a reload can't eat a keystroke.
+  const { syncTick } = useApp();
+  const lastEdit = useRef(0);
+  useEffect(() => {
+    if (!syncTick || Date.now() - lastEdit.current < 4000) return;
+    const d = todayKey();
+    loadProfile().then(setProfile);
+    loadWorkoutDay(d).then(setLog);
+    loadLastTimes(d).then(setLastTimes);
+    loadHistory().then(setHistory);
+  }, [syncTick]);
+
   const updateSets = (name: string, sets: LoggedSet[]) => {
+    lastEdit.current = Date.now();
     setLog((prev) => {
       const next = { ...prev, [name]: sets };
       saveWorkoutDay(date, next);

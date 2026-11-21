@@ -25,7 +25,7 @@ function dayLabel(day: string, long = false): string {
 }
 
 export default function FitnessTrackScreen() {
-  const { userEmail, setAuthOpen } = useApp();
+  const { userEmail, setAuthOpen, syncTick } = useApp();
   const [days, setDays] = useState<FitnessDay[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -43,7 +43,7 @@ export default function FitnessTrackScreen() {
   useFocusEffect(
     useCallback(() => {
       load();
-    }, [load, userEmail]),
+    }, [load, userEmail, syncTick]),
   );
 
   const onRefresh = async () => {

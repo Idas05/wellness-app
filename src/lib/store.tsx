@@ -21,6 +21,8 @@ type AppState_ = {
   refreshSleep: () => Promise<void>;
   signOut: () => Promise<void>;
   askPermission: () => Promise<void>;
+  /** Goes up whenever the other device may have changed something; tabs reload their data when it does. */
+  syncTick: number;
 };
 
 const Ctx = createContext<AppState_ | null>(null);
@@ -42,6 +44,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [authOpen, setAuthOpen] = useState(false);
   const [sleep, setSleep] = useState<SleepNight[]>([]);
   const [sleepError, setSleepError] = useState<string | null>(null);
+  const [syncTick, setSyncTick] = useState(0);
   const latest = useRef<Reminder[]>([]);
   latest.current = reminders;
 
@@ -102,22 +105,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // Pick up changes made on the other device when the app comes back to the front.
-    const appState = AppState.addEventListener('change', (state) => {
-      if (state === 'active' && signedIn) {
-        refresh();
-        refreshSleep();
-      }
-    });
+    // Pull everything again: reminders and sleep here, and every open tab reloads its own data.
+    let lastPull = 0;
+    const pull = () => {
+      if (!signedIn) return;
+      lastPull = Date.now();
+      refresh();
+      refreshSleep();
+      setSyncTick((t) => t + 1);
+    };
+    let soon: ReturnType<typeof setTimeout> | undefined;
+    const pullSoon = () => {
+      clearTimeout(soon);
+      soon = setTimeout(pull, 400);
+    };
+    const visible = () => (Platform.OS === 'web' ? typeof document === 'undefined' || document.visibilityState === 'visible' : AppState.currentState === 'active');
 
-    // The website stays open in a tab, so pull changes made on the phone every minute.
-    const poll = Platform.OS === 'web' ? setInterval(() => signedIn && refresh(), 60_000) : undefined;
+    // Coming back to the app or the browser tab.
+    const appState = AppState.addEventListener('change', (state) => state === 'active' && pull());
+    const onVisible = () => visible() && pull();
+    if (Platform.OS === 'web' && typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisible);
+
+    // Live: the account tells us the moment a row changes on the other device (after supabase/live-sync.sql).
+    const channel = supabase
+      ?.channel('wellness-live')
+      .on('postgres_changes', { event: '*', schema: 'public' }, () => visible() && pullSoon())
+      .subscribe();
+
+    // Backup for when live updates aren't on: check every 15 seconds while you're looking at it.
+    const poll = setInterval(() => visible() && Date.now() - lastPull > 14_000 && pull(), 15_000);
 
     return () => {
       stopWeb();
       sub?.data.subscription.unsubscribe();
       appState.remove();
-      if (poll) clearInterval(poll);
+      if (Platform.OS === 'web' && typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible);
+      if (channel) supabase?.removeChannel(channel);
+      clearTimeout(soon);
+      clearInterval(poll);
     };
   }, [persist, applySynced, refresh, refreshSleep]);
 
@@ -173,6 +198,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         refreshSleep,
         signOut,
         askPermission,
+        syncTick,
       }}
     >
       {children}
